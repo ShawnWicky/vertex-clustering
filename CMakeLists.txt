@@ -45,6 +45,12 @@ FetchContent_MakeAvailable(glew)
 set(PROJECT_SOURCES_WITHOUT_MAIN
 	# order by folder structure
     "Source/Mesh/mesh.cpp;"
+	
+	"Source/Interface.cpp;"
+
+	"Source/Algorithm/scene.cpp;"
+	"Source/Algorithm/inspector.cpp;"
+	"Source/Algorithm/simplification.cpp;"
 )
 
 add_executable(${PROJECT_NAME} Source/main.cpp ${PROJECT_SOURCES_WITHOUT_MAIN})
@@ -56,7 +62,6 @@ add_executable(${PROJECT_NAME} Source/main.cpp ${PROJECT_SOURCES_WITHOUT_MAIN})
 # list of folders to include
 set(PROJECT_INCLUDES
 	"Include;"
-	"build/_deps/imgui-src;"
 	)
 	
 # different targets

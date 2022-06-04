@@ -12,38 +12,39 @@
 //GLM
 #include <glm/glm.hpp>
 
+//project
+#include <Interface.hpp>
 
-using namespace std;
-
-
-int main(int argc, const char * argv[])
+namespace MSc
 {
-    if(!glfwInit())
-        return EXIT_FAILURE;
+	int main(int argc, const char * argv[])
+	{
+	    if(!glfwInit())
+	        return EXIT_FAILURE;
 
-    // OpenGL+GLSL versions
-	const char* glsl_version = "#version 450";
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  
+	    // OpenGL+GLSL versions
+		const char* glsl_version = "#version 450";
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "MSc Project", NULL, NULL);
-	if (window == NULL)
-		return EXIT_FAILURE;
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1); // Enable vsync
+	    GLFWwindow* window = glfwCreateWindow(1280, 720, "MSc Project", NULL, NULL);
+		if (window == NULL)
+			return EXIT_FAILURE;
+		glfwMakeContextCurrent(window);
+		glfwSwapInterval(1); // Enable vsync
 
-    //Setup Dear ImGui
-    // Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
+	    //Setup Dear ImGui
+	    // Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
 
-    //enable docking
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	    //enable docking
+	    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    // Setup Dear ImGui style
+	    // Setup Dear ImGui style
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.Colors[ImGuiCol_Text]                  = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 		style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -103,44 +104,50 @@ int main(int argc, const char * argv[])
 		style.ScrollbarRounding = 10.0f;
 		style.TabRounding       = 10.0f;
 
-        // Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(window, true);
-		ImGui_ImplOpenGL3_Init(glsl_version);
+	        // Setup Platform/Renderer bindings
+			ImGui_ImplGlfw_InitForOpenGL(window, true);
+			ImGui_ImplOpenGL3_Init(glsl_version);
 
-        // Main loop
-		while (!glfwWindowShouldClose(window))
-		{
-			glfwPollEvents();
+		//setup the constructors
+		Scene scene;
+		Inspector inspector;
+		Interface interface(&scene, &inspector);
 
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+	        // Main loop
+			while (!glfwWindowShouldClose(window))
+			{
+				glfwPollEvents();
 
-			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-				
-			ImGui::ShowDemoWindow();
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
+				ImGui::NewFrame();
 
-			ImGui::Render();
+				ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+				interface.ShowGUI();
+				ImGui::ShowDemoWindow();
 
-			int window_w, window_h;
-			glfwGetFramebufferSize(window, &window_w, &window_h);
-			glViewport(0, 0, window_w, window_h);
-			ImVec4 clear_colour = ImVec4(0.45f, 0.55f, 0.6f, 1.f);
-			glClearColor(clear_colour.x * clear_colour.w, clear_colour.y * clear_colour.w, clear_colour.z * clear_colour.w, clear_colour.w);
-			glClear(GL_COLOR_BUFFER_BIT);
+				ImGui::Render();
 
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				int window_w, window_h;
+				glfwGetFramebufferSize(window, &window_w, &window_h);
+				glViewport(0, 0, window_w, window_h);
+				ImVec4 clear_colour = ImVec4(0.45f, 0.55f, 0.6f, 1.f);
+				glClearColor(clear_colour.x * clear_colour.w, clear_colour.y * clear_colour.w, clear_colour.z * clear_colour.w, clear_colour.w);
+				glClear(GL_COLOR_BUFFER_BIT);
 
-			glfwSwapBuffers(window);
-        }
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	//cleanup ImGui
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-    // Cleanup glfw
-	glfwDestroyWindow(window);
-	glfwTerminate();
+				glfwSwapBuffers(window);
+	        }
 
-	return EXIT_SUCCESS;
+		//cleanup ImGui
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+	    // Cleanup glfw
+		glfwDestroyWindow(window);
+		glfwTerminate();
+
+		return EXIT_SUCCESS;
+	}
 }
