@@ -110,9 +110,34 @@ int main(int argc, const char * argv[])
         // Main loop
 		while (!glfwWindowShouldClose(window))
 		{
+			glfwPollEvents();
 
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+				
+			ImGui::ShowDemoWindow();
+
+			ImGui::Render();
+
+			int window_w, window_h;
+			glfwGetFramebufferSize(window, &window_w, &window_h);
+			glViewport(0, 0, window_w, window_h);
+			ImVec4 clear_colour = ImVec4(0.45f, 0.55f, 0.6f, 1.f);
+			glClearColor(clear_colour.x * clear_colour.w, clear_colour.y * clear_colour.w, clear_colour.z * clear_colour.w, clear_colour.w);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			glfwSwapBuffers(window);
         }
 
+	//cleanup ImGui
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
     // Cleanup glfw
 	glfwDestroyWindow(window);
 	glfwTerminate();
