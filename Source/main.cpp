@@ -15,15 +15,15 @@
 //project
 #include <Interface.hpp>
 
-namespace MSc
-{
-	int main(int argc, const char * argv[])
+using namespace MSc;
+
+int main(int argc, const char * argv[])
 	{
 	    if(!glfwInit())
 	        return EXIT_FAILURE;
 
 	    // OpenGL+GLSL versions
-		const char* glsl_version = "#version 450";
+		const char* glsl_version = "#version 330";
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
@@ -150,4 +150,3 @@ namespace MSc
 
 		return EXIT_SUCCESS;
 	}
-}
