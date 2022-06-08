@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.2)
 
 project(MScProject)
 
@@ -44,6 +44,7 @@ FetchContent_MakeAvailable(glew)
 # New place to put all your source code files into:
 set(PROJECT_SOURCES_WITHOUT_MAIN
 	# order by folder structure
+	"Include/Mesh/mesh.hpp;"
     "Source/Mesh/mesh.cpp;"
 	
 	"Source/Interface.cpp;"
@@ -51,6 +52,7 @@ set(PROJECT_SOURCES_WITHOUT_MAIN
 	"Source/Algorithm/scene.cpp;"
 	"Source/Algorithm/inspector.cpp;"
 	"Source/Algorithm/simplification.cpp;"
+
 )
 
 add_executable(${PROJECT_NAME} Source/main.cpp ${PROJECT_SOURCES_WITHOUT_MAIN})
@@ -62,6 +64,7 @@ add_executable(${PROJECT_NAME} Source/main.cpp ${PROJECT_SOURCES_WITHOUT_MAIN})
 # list of folders to include
 set(PROJECT_INCLUDES
 	"Include;"
+	"lib;"
 	)
 	
 # different targets

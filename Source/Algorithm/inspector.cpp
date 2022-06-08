@@ -9,6 +9,6 @@ namespace MSc
     
     void Inspector::ShowGuiWindow(bool* outIsOpen)
     {
-
+        
     }
 }

@@ -1,4 +1,5 @@
 #include <Algorithm/scene.hpp>
+#include <imgui.h>
 
 namespace MSc
 {
@@ -9,6 +10,7 @@ namespace MSc
     
     void Scene::ShowGuiWindow(bool* outIsOpen)
     {
-
+        ImGui::Separator();
+        
     }
 }
