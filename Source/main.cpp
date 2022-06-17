@@ -111,7 +111,8 @@ int main(int argc, const char * argv[])
 			ImGui_ImplOpenGL3_Init(glsl_version);
 
 		//setup the constructors
-		Scene scene;
+		Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
+		Scene scene(shader);
 		Inspector inspector;
 		Interface interface(&scene, &inspector);
 

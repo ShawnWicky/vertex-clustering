@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
+#include <string>
 
 namespace MSc
 {
@@ -51,5 +52,5 @@ namespace MSc
         // utility function for checking shader compilation/linking errors.
         // ------------------------------------------------------------------------
         void checkCompileErrors(GLuint shader, std::string type);
-    }
+    };
 }

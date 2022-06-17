@@ -1,7 +1,7 @@
 #pragma once
 
 #include <imgui.h>
-#include <Algorithm/scene.hpp>
+#include <Render/scene.hpp>
 #include <Algorithm/inspector.hpp>
 
 namespace MSc
