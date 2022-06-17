@@ -44,12 +44,13 @@ FetchContent_MakeAvailable(glew)
 # New place to put all your source code files into:
 set(PROJECT_SOURCES_WITHOUT_MAIN
 	# order by folder structure
-	"Include/Mesh/mesh.hpp;"
     "Source/Mesh/mesh.cpp;"
 	
 	"Source/Interface.cpp;"
 
-	"Source/Algorithm/scene.cpp;"
+	"Source/Render/scene.cpp;"
+	"Source/Render/shader.cpp;"
+
 	"Source/Algorithm/inspector.cpp;"
 	"Source/Algorithm/simplification.cpp;"
 
