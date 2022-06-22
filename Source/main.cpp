@@ -120,7 +120,7 @@ int main(int argc, const char * argv[])
             // without GLEW, seg faults will happen
         }
 
-        Shader shader("/Users/niyoroshitatsu/Downloads/GithubDesktop/MScProject/Shader/shader.vert", "/Users/niyoroshitatsu/Downloads/GithubDesktop/MScProject/Shader/shader.frag");
+        Shader shader("C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.vert", "C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.frag");
 
         float vertices[] = {
                 // positions                         // colors
