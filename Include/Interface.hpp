@@ -9,17 +9,14 @@ namespace MSc
     class Interface
     {
     private:
-        bool _showSceneWindow = true;
         bool _showInspectorWindow = true;
 
-        Scene *_scene;
         Inspector *_inspector;
     public:
     //constructor
-        Interface(Scene *scene, Inspector *Inspector);
+        Interface(Inspector *Inspector);
     //Window
         void ShowGUI();
-        void ShowSceneWindow(bool* outIsOpen);
         void ShowInspectorWindow(bool* outIsOpen);
     };
 }

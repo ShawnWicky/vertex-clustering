@@ -11,7 +11,7 @@ namespace MSc
         bool _setupOpenGL = false;
 
         unsigned int VBO, VAO;
-         ;
+
         Shader _shader;
     public:
         Scene(Shader shader);

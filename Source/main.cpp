@@ -9,19 +9,20 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-//GLM
-#include <glm/glm.hpp>
-
-
-
 //project
 #include <Interface.hpp>
 
 using namespace MSc;
 
+void GlfwErrorCallback(int error, const char* description)
+{
+    std::cout << "Glfw Error " << error << ": " << description;
+}
+
 int main(int argc, const char * argv[])
 	{
-	    if(!glfwInit())
+        glfwSetErrorCallback(GlfwErrorCallback);
+        if(!glfwInit())
 	        return EXIT_FAILURE;
 
 	    // OpenGL+GLSL versions
@@ -111,10 +112,42 @@ int main(int argc, const char * argv[])
 			ImGui_ImplOpenGL3_Init(glsl_version);
 
 		//setup the constructors
-		Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-		Scene scene(shader);
-		Inspector inspector;
-		Interface interface(&scene, &inspector);
+        // glew imports all OpenGL extension methods
+        GLenum errorCode = glewInit();
+        if (errorCode != GLEW_OK)
+        {
+             std::cout << "GLEW initialisation error. " << std::string((char*)glewGetErrorString(errorCode));
+            // without GLEW, seg faults will happen
+        }
+
+        Shader shader("/Users/niyoroshitatsu/Downloads/GithubDesktop/MScProject/Shader/shader.vert", "/Users/niyoroshitatsu/Downloads/GithubDesktop/MScProject/Shader/shader.frag");
+
+        float vertices[] = {
+                // positions                         // colors
+                0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
+                -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
+                0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top
+        };
+
+        unsigned int VBO, VAO;
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        // position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        // color attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+
+        Inspector inspector;
+		Interface interface(&inspector);
 
 	        // Main loop
 			while (!glfwWindowShouldClose(window))
@@ -125,7 +158,6 @@ int main(int argc, const char * argv[])
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
 
-				ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 				interface.ShowGUI();
 				ImGui::ShowDemoWindow();
 
@@ -138,12 +170,22 @@ int main(int argc, const char * argv[])
 				glClearColor(clear_colour.x * clear_colour.w, clear_colour.y * clear_colour.w, clear_colour.z * clear_colour.w, clear_colour.w);
 				glClear(GL_COLOR_BUFFER_BIT);
 
+                // render the triangle
+                shader.use();
+                glBindVertexArray(VAO);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 				glfwSwapBuffers(window);
+                glfwPollEvents();
 	        }
 
-		//cleanup ImGui
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+
+        //cleanup ImGui
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
