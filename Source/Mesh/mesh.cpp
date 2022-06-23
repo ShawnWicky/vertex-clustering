@@ -2,10 +2,10 @@
 
 #include <Mesh/mesh.hpp>
 
-#include <tiny_obj_loader.h>
 
 namespace MSc
 {
+/*
     // Model
     Mesh::Model::Model() noexcept = default;
 
@@ -102,4 +102,5 @@ namespace MSc
     
         return model;
     }
+*/
 }

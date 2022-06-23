@@ -1,12 +1,13 @@
 #include <iostream>
 
 //Dear ImGui
+
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
 //OpenGL
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 //project
@@ -113,14 +114,13 @@ int main(int argc, const char * argv[])
 
 		//setup the constructors
         // glew imports all OpenGL extension methods
-        GLenum errorCode = glewInit();
-        if (errorCode != GLEW_OK)
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-             std::cout << "GLEW initialisation error. " << std::string((char*)glewGetErrorString(errorCode));
-            // without GLEW, seg faults will happen
+            std::cout << "Failed to initialize GLAD" << std::endl;
+            return -1;
         }
 
-        Shader shader("C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.vert", "C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.frag");
+        Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
 
         float vertices[] = {
                 // positions                         // colors
@@ -194,4 +194,5 @@ int main(int argc, const char * argv[])
 		glfwTerminate();
 
 		return EXIT_SUCCESS;
+
 	}
