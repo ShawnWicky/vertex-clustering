@@ -26,8 +26,8 @@ project "MScProject"
 
     links {"GLFW", "GLM", "GLAD", "ImGui"}
 
-    filter "system:Linux"
-        links {"dl", "pthread"}
+    filter {"system:Linux". "action:gmake"}
+        links {"dl", "X11", "pthread"}
     
 
     filter {"system:windows", "action:vs2022"}
