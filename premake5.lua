@@ -20,9 +20,11 @@ project "MScProject"
     targetdir "bin/%{cfg.buildcfg}"
     objdir "obj/%{cfg.buildcfg}"
 
-    sysincludedirs{"Include/", "libs/glad/include/", "libs/glfw/include/","libs/glm/", "libs/imgui/"}
+    sysincludedirs{"Include/", "libs/glad/include/", "libs/glfw/include/","libs/glm/", "libs/imgui/", "libs/tinyobjloader/"}
 
     files {"Source/**.cpp"}
+
+    files {"Include/**.h"}
 
     links {"GLFW", "GLM", "GLAD", "ImGui"}
 
@@ -52,4 +54,4 @@ include "libs/glfw.lua"
 include "libs/glad.lua"
 include "libs/glm.lua"
 include "libs/imgui.lua"
-    
+include "libs/tinyobjloader.lua"

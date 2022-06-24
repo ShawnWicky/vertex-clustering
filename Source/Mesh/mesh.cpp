@@ -2,7 +2,7 @@
 
 #include <Mesh/mesh.hpp>
 
-
+#include <tiny_obj_loader.h>
 namespace MSc
 {
 /*
@@ -102,5 +102,5 @@ namespace MSc
     
         return model;
     }
-*/
+    */
 }
