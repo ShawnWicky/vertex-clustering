@@ -120,7 +120,7 @@ int main(int argc, const char * argv[])
             return -1;
         }
 
-        Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
+        Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
 
         float vertices[] = {
                 // positions                         // colors

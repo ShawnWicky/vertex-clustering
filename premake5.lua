@@ -26,7 +26,7 @@ project "MScProject"
 
     links {"GLFW", "GLM", "GLAD", "ImGui"}
 
-    filter {"system:Linux". "action:gmake"}
+    filter {"system:Linux", "action:gmake"}
         links {"dl", "X11", "pthread"}
     
 
