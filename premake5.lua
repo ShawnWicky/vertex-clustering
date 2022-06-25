@@ -14,7 +14,7 @@ workspace "MScProject"
 project "MScProject"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++11"
         architecture "x86_64"
     
     targetdir "bin/%{cfg.buildcfg}"
