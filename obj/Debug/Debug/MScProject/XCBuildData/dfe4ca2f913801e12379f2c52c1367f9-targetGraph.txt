@@ -1,0 +1,12 @@
+Target dependency graph (6 targets)
+GLM in GLM, no dependencies
+GLFW in GLFW, no dependencies
+GLAD in GLAD, no dependencies
+ImGui in ImGui, no dependencies
+Assimp in Assimp, no dependencies
+MScProject in MScProject, depends on:
+GLFW in GLFW (explicit)
+GLM in GLM (explicit)
+GLAD in GLAD (explicit)
+ImGui in ImGui (explicit)
+Assimp in Assimp (explicit)

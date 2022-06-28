@@ -1,44 +1,44 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <Render/shader.hpp>
 
 #include <string>
 #include <vector>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 namespace MSc
 {
+    struct Vertex
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+    };
+
     class Mesh
     {
-        struct MeshInfo
-        {
-            std::string meshName;
-            
-            std::size_t vertexStartIndex;
-	        std::size_t numberOfVertices;
-        };
-
-
-        struct Model
-        {
-            Model() noexcept;
-
-	        Model( Model const& ) = delete;
-	        Model& operator= (Model const&) = delete;
-
-	        Model( Model&& ) noexcept;
-	        Model& operator= (Model&&) noexcept;
-
-
-	        std::string modelName;
-	        std::string modelSourcePath;
-
-	        std::vector<MeshInfo> meshes;
-
-	        std::vector<glm::vec3> vertexPositions;
-	        std::vector<glm::vec3> vertexNormals;
-	        std::vector<glm::vec2> vertexTextureCoords;
-        };
-
-        Model loadobj(std::string fileName);
+    public:
+        //consturctor
+        Mesh(std::vector<Vertex> iVertices, std::vector<unsigned int> iIndices);
+        ~Mesh();
+        
+        unsigned int VAO;
+        
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indices;
+        
+        void LoadScene();
+        void Loadobj(std::string const &fileName);
+        Mesh loadMesh(aiMesh *mesh, aiScene *scene);
+        void Render(Shader &shader);
+        void Clear();
+    private:
+        unsigned int VBO, EBO;
+        
+        void BindMesh();
+ 
     };
 }

@@ -1,0 +1,73 @@
+{
+  "_buildCommand2" : {
+    "command" : "prepareForIndexing",
+    "enableIndexBuildArena" : false,
+    "targets" : null
+  },
+  "buildCommand" : "build",
+  "configuredTargets" : [
+    {
+      "guid" : "7500c76fc920810ef0823c5e138aacf4fcf119bbf3eadeb55ff4d5a4774120a2"
+    },
+    {
+      "guid" : "d9f0e9185e6e00d4313038130f310ce40f66c6a0b1157e218873be265212ff36"
+    },
+    {
+      "guid" : "0f71c00fe206beb9e7e57f8bd070beee10043aa156035370422d8d7a99c88ea5"
+    },
+    {
+      "guid" : "f0b5275a608e4506d4f533bac081e0fa0d9c9068dbb76d33c7ce5da77347610f"
+    },
+    {
+      "guid" : "444cab00249d919e7271eeaf9fed79eab34f2a7b389fc237cead4773f429a352"
+    },
+    {
+      "guid" : "d07d22e8181d611f166a2849019cb5e1071787751dc99e2822ef5817a83ca5dc"
+    }
+  ],
+  "containerPath" : "/Users/niyoroshitatsu/Downloads/GithubDesktop/MScProject/MScProject.xcodeproj",
+  "continueBuildingAfterErrors" : true,
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "x86_64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "macosx",
+      "sdk" : "macosx12.3",
+      "sdkVariant" : "macos",
+      "supportedArchitectures" : [
+        "x86_64h",
+        "x86_64"
+      ],
+      "targetArchitecture" : "x86_64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "",
+      "buildProductsPath" : "",
+      "derivedDataPath" : "/Users/niyoroshitatsu/Library/Developer/Xcode/DerivedData",
+      "indexDataStoreFolderPath" : "/Users/niyoroshitatsu/Library/Developer/Xcode/DerivedData/MScProject-ebimyzqrmgmpvyaviocyelgtjrlf/Index/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/niyoroshitatsu/Library/Developer/Xcode/DerivedData/MScProject-ebimyzqrmgmpvyaviocyelgtjrlf/Index/PrecompiledHeaders",
+      "pchPath" : ""
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "synthesized" : {
+        "table" : {
+          "ENABLE_PREVIEWS" : "NO"
+        }
+      }
+    }
+  },
+  "qos" : "default",
+  "schemeCommand" : "launch",
+  "schemeCommand2" : "launch",
+  "shouldCollectMetrics" : false,
+  "showNonLoggedProgress" : true,
+  "useDryRun" : true,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

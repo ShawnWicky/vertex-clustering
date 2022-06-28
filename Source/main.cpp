@@ -6,12 +6,14 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
-//OpenGL
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 //project
 #include <Interface.hpp>
+#include <Mesh/mesh.hpp>
+
+//OpenGL
+#include <GLFW/glfw3.h>
+
+
 
 using namespace MSc;
 
@@ -119,9 +121,18 @@ int main(int argc, const char * argv[])
             std::cout << "Failed to initialize GLAD" << std::endl;
             return -1;
         }
-
+    
+        Inspector inspector;
+        Interface interface(&inspector);
+        
+#ifdef __APPLE__
+        Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
+      //  mesh.model = mesh.loadobj("../../assets/bunny.obj");
+#else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-
+      //  mesh.model = mesh.loadobj("./assets/bunny.obj");
+#endif
+        
         float vertices[] = {
                 // positions                         // colors
                 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
@@ -146,8 +157,6 @@ int main(int argc, const char * argv[])
         glEnableVertexAttribArray(1);
 
 
-        Inspector inspector;
-		Interface interface(&inspector);
 
 	        // Main loop
 			while (!glfwWindowShouldClose(window))
