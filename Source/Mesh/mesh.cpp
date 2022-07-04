@@ -4,23 +4,21 @@
 #include <Mesh/mesh.hpp>
 
 #include <glad/glad.h>
-
+#include <glm/gtx/string_cast.hpp>
 #include <assimp/importer.hpp>
 
 namespace MSc
 {
-    Mesh::Mesh(std::vector<Vertex> iVertices, std::vector<unsigned int> iIndices)
+    Mesh::Mesh(std::string const &fileName)
     {
-        this->vertices = iVertices;
-        this->indices = iIndices;
-        
+        Loadobj(fileName);
         BindMesh();
     }
 
     void Mesh::Render(Shader &shader)
     {
-        glBindVertexArray(VAO);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
+        glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
@@ -46,58 +44,76 @@ namespace MSc
         // vertex normals
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        
     }
 
     void Mesh::Loadobj(std::string const &fileName)
     {
         Assimp::Importer importer;
         
-        const aiScene *scene = importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_GenSmoothNormals);
+        const aiScene* scene = importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_GenSmoothNormals);
         
-        // check for errors
-        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+        if(scene)
         {
-            std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
-            return;
+            LoadScene(scene);
+        }
+        else
+        {
+            std::cout << ("Error parsing '%s': '%s'", fileName.c_str(), importer.GetErrorString()) << std::endl;
         }
 
     }
 
-    Mesh Mesh::loadMesh(aiMesh *mesh, aiScene *scene)
+    void Mesh::LoadScene(const aiScene *scene)
     {
-        std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
-        
-        for(unsigned int i = 0; i < mesh->mNumVertices; i++)
+        for(unsigned int i = 0; i < scene->mNumMeshes; i++)
+        {
+            const aiMesh* meshes = scene->mMeshes[i];
+            loadMesh(meshes);
+        }
+    }
+
+    void Mesh::loadMesh(const aiMesh* meshes)
+    {
+        for(unsigned int i = 0; i < meshes->mNumVertices; i++)
         {
             Vertex vertex;
             glm::vec3 vector;
             // positions
-            vector.x = mesh->mVertices[i].x;
-            vector.y = mesh->mVertices[i].y;
-            vector.z = mesh->mVertices[i].z;
+            vector.x = meshes->mVertices[i].x;
+            vector.y = meshes->mVertices[i].y;
+            vector.z = meshes->mVertices[i].z;
             vertex.position = vector;
             // normals
-            if (mesh->HasNormals())
+            if (meshes->HasNormals())
             {
-                vector.x = mesh->mNormals[i].x;
-                vector.y = mesh->mNormals[i].y;
-                vector.z = mesh->mNormals[i].z;
+                vector.x = meshes->mNormals[i].x;
+                vector.y = meshes->mNormals[i].y;
+                vector.z = meshes->mNormals[i].z;
                 vertex.normal = vector;
             }
-            vertices.push_back(vertex);
+            vertices.emplace_back(vertex);
         }
         // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
-        for(unsigned int i = 0; i < mesh->mNumFaces; i++)
+        for(unsigned int i = 0; i < meshes->mNumFaces; i++)
         {
-            aiFace face = mesh->mFaces[i];
+            const aiFace& face = meshes->mFaces[i];
+            //check if the obj file is triangle files
+            assert(face.mNumIndices == 3);
             // retrieve all indices of the face and store them in the indices vector
             for(unsigned int j = 0; j < face.mNumIndices; j++)
-                indices.push_back(face.mIndices[j]);
+                indices.emplace_back(face.mIndices[j]);
         }
-    
-    // return a mesh object created from the extracted mesh data
-    return Mesh(vertices, indices);
+        
+        for(unsigned int i = 0; i < vertices.size(); i++)
+        {
+            std::cout << "v: " << glm::to_string(vertices[i].position) << std::endl;
+        }
+        
+        for(unsigned int i = 0; i < vertices.size(); i++)
+        {
+            std::cout << "vn: " << glm::to_string(vertices[i].normal) << std::endl;
+        }
     }
     
 }

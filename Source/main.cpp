@@ -9,18 +9,33 @@
 //project
 #include <Interface.hpp>
 #include <Mesh/mesh.hpp>
-
+#include <Render/camera.hpp>
 //OpenGL
 #include <GLFW/glfw3.h>
 
-
+#include <glm/gtx/string_cast.hpp>
 
 using namespace MSc;
 
-void GlfwErrorCallback(int error, const char* description)
-{
-    std::cout << "Glfw Error " << error << ": " << description;
-}
+void GlfwErrorCallback(int error, const char* description);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processInput(GLFWwindow *window);
+
+// settings
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
+
+// camera
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.f, 0.f, 1.f), 90.f, 0.f);
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+// timing
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
 
 int main(int argc, const char * argv[])
 	{
@@ -41,6 +56,12 @@ int main(int argc, const char * argv[])
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1); // Enable vsync
 
+        //glfw call back function
+        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        glfwSetCursorPosCallback(window, mouse_callback);
+    
+    
+    
 	    //Setup Dear ImGui
 	    // Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -122,17 +143,19 @@ int main(int argc, const char * argv[])
             return -1;
         }
     
+        //initilze constructors
         Inspector inspector;
         Interface interface(&inspector);
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
-      //  mesh.model = mesh.loadobj("../../assets/bunny.obj");
+        Mesh mesh("../../assets/test.obj");
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-      //  mesh.model = mesh.loadobj("./assets/bunny.obj");
+        mesh.model = mesh.loadobj("./assets/bunny.obj");
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
 #endif
-        
+/*
         float vertices[] = {
                 // positions                         // colors
                 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
@@ -155,7 +178,7 @@ int main(int argc, const char * argv[])
         // color attribute
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
-
+*/
 
 
 	        // Main loop
@@ -172,6 +195,17 @@ int main(int argc, const char * argv[])
 
 				ImGui::Render();
 
+                
+                // per-frame time logic
+                // --------------------
+                float currentFrame = static_cast<float>(glfwGetTime());
+                deltaTime = currentFrame - lastFrame;
+                lastFrame = currentFrame;
+
+                // input
+                // -----
+                processInput(window);
+                
 				int window_w, window_h;
 				glfwGetFramebufferSize(window, &window_w, &window_h);
 				glViewport(0, 0, window_w, window_h);
@@ -181,18 +215,22 @@ int main(int argc, const char * argv[])
 
                 // render the triangle
                 shader.use();
-                glBindVertexArray(VAO);
-                glDrawArrays(GL_TRIANGLES, 0, 3);
 
-
+                // set up the MVP matrices.
+                glm::mat4 model = glm::mat4(1.0f);
+                glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+                glm::mat4 view = camera.GetViewMatrix();
+                shader.setMat4("projection", projection);
+                shader.setMat4("view", view);
+                shader.setMat4("model", model);
+                // render the loaded model
+                mesh.Render(shader);
+                
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+                
 				glfwSwapBuffers(window);
                 glfwPollEvents();
 	        }
-
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
 
         //cleanup ImGui
 		ImGui_ImplOpenGL3_Shutdown();
@@ -205,3 +243,56 @@ int main(int argc, const char * argv[])
 		return EXIT_SUCCESS;
 
 	}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.ProcessKeyboard(MSc::Movement::FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.ProcessKeyboard(MSc::Movement::BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.ProcessKeyboard(MSc::Movement::LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.ProcessKeyboard(MSc::Movement::RIGHT, deltaTime);
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void GlfwErrorCallback(int error, const char* description)
+{
+    std::cout << "Glfw Error " << error << ": " << description;
+}
