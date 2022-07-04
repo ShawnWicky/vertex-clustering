@@ -23,7 +23,7 @@ project "MScProject"
     sysincludedirs{"Include/", "libs/glad/include/", "libs/glfw/include/","libs/glm/", "libs/imgui/", "libs/assimp/include/"}
 
     files {"Source/**.cpp"}
-
+    files {"Shader/*.vert", "Shader/*.frag"}
     files {"Include/**.hpp"}
 
     links {"GLFW", "GLM", "GLAD", "ImGui", "Assimp"}

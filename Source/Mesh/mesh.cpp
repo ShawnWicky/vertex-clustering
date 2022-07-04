@@ -17,7 +17,6 @@ namespace MSc
 
     void Mesh::Render(Shader &shader)
     {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
@@ -104,16 +103,7 @@ namespace MSc
             for(unsigned int j = 0; j < face.mNumIndices; j++)
                 indices.emplace_back(face.mIndices[j]);
         }
-        
-        for(unsigned int i = 0; i < vertices.size(); i++)
-        {
-            std::cout << "v: " << glm::to_string(vertices[i].position) << std::endl;
-        }
-        
-        for(unsigned int i = 0; i < vertices.size(); i++)
-        {
-            std::cout << "vn: " << glm::to_string(vertices[i].normal) << std::endl;
-        }
+       
     }
     
 }
