@@ -152,7 +152,7 @@ int main(int argc, const char * argv[])
         Mesh mesh("../../assets/test.obj");
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-        mesh.model = mesh.loadobj("./assets/bunny.obj");
+		Mesh mesh("./assets/test.obj");
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
 #endif
 /*

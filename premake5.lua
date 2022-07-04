@@ -24,7 +24,7 @@ project "MScProject"
 
     files {"Source/**.cpp"}
 
-    files {"Include/**.h"}
+    files {"Include/**.hpp"}
 
     links {"GLFW", "GLM", "GLAD", "ImGui", "Assimp"}
 
