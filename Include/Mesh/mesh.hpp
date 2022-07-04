@@ -22,19 +22,19 @@ namespace MSc
     {
     public:
         //consturctor
-        Mesh(std::vector<Vertex> iVertices, std::vector<unsigned int> iIndices);
-        ~Mesh();
+        Mesh(std::string const &fileName);
         
         unsigned int VAO;
         
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
         
-        void LoadScene();
+        void LoadScene(const aiScene* scene);
+        void SetUpMesh();
         void Loadobj(std::string const &fileName);
-        Mesh loadMesh(aiMesh *mesh, aiScene *scene);
+        void loadMesh(const aiMesh* meshes);
         void Render(Shader &shader);
-        void Clear();
+        
     private:
         unsigned int VBO, EBO;
         
