@@ -5,54 +5,33 @@
 
 namespace MSc
 {
-    enum class Movement 
-    {
-        FORWARD,
-        BACKWARD,
-        LEFT,
-        RIGHT
-    };
-
     class Camera
     {
     public:
-        glm::vec3 position;
-        glm::vec3 forward;
-        glm::vec3 up;
-        glm::vec3 right;
-        glm::vec3 worldUp;
+        //Ruglar
+        Camera(glm::vec3 position, glm::vec3 target, glm::vec3 worldUp);
+
+        Camera(glm::vec3 position, float pitch, float yaw, glm::vec3 worldUp);
+
+        glm::vec3 position; //camera pos
+        glm::vec3 forward; //camera forward direction
+        glm::vec3 right; // camera right
+        glm::vec3 up; // camera up
+        glm::vec3 worldUp; //world up
 
         float yaw;
         float pitch;
+        float speedX;
+        float speedY;
+        float speedZ;
+        float speedScalar = 0.5f;
 
-        float speed;
-        float sensitive;
-        float zoom;
+        glm::mat4 getViewMatrix();
 
-        // constructor with vectors
-        Camera(glm::vec3 iPosition, glm::vec3 iUp, float iYaw, float iPitch);
-        // constructor with scalar values
-        Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float iYaw, float iPitch);
+        void updateCameraPosition(float deltaTime);
 
-        // returns the view matrix calculated using Euler Angles and the LookAt Matrix
-        glm::mat4 GetViewMatrix();
+        void updateCameraAngle();
 
-        // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-        void ProcessKeyboard(Movement direction, float deltaTime);
-
-        // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-        void ProcessMouseMovement(float xoffset, float yoffset);
-
-
-    private:
-        float _yaw          = -90.0f;
-        float _pitch        =  0.0f;
-        float _speed        =  2.5f;
-        float _sensitive    =  0.1f;
-        float _zoom         =  45.0f;
-
-        // calculates the front vector from the Camera's (updated) Euler Angles
-        void updateCameraVectors();
-
-    };
+        void processMouseMovement(float deltaX, float deltaY, float deltaTime);
+};
 }
