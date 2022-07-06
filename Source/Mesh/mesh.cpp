@@ -93,7 +93,7 @@ namespace MSc
             }
             vertices.emplace_back(vertex);
         }
-        // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
+        // now loop through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
         for(unsigned int i = 0; i < meshes->mNumFaces; i++)
         {
             const aiFace& face = meshes->mFaces[i];
@@ -104,6 +104,10 @@ namespace MSc
                 indices.emplace_back(face.mIndices[j]);
         }
        
+       for(unsigned int i = 0; i < indices.size(); i++)
+       {
+        std::cout << indices[i] << std::endl;
+       }
     }
     
 }

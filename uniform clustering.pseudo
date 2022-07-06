@@ -1,2 +1,75 @@
-1. Get geometry input(vertices, faces)
-2. 
+// V table
+class Vertex
+{
+    // the smallest edge that comes from current vertex
+    HalfEdge* half_edge_of_vertex;
+
+    vec3 postition;
+    vec3 normal;
+    void import_vertex();
+}
+
+class HalfEdge
+{
+    // the vertex that the edge point to (the end point of the edge)
+    Vertex* vertex;
+    // the other half of the current half edge
+    std::int32_t pair_id;
+    // the face that the half edge belong to
+    Face* face;
+    // the next edge
+    HalfEdge* next;
+    // the previous edge
+    HalfEdge* previous;
+}
+
+
+class Edge
+{
+    //one of the hlaf edge that belong to the edge
+    HalfEdge* half_edge_of_edge;
+}
+
+// T table
+class Face
+{
+    // vertex id in face
+    std::vector<int> vertex_id;
+
+    // one of the face half_edge
+    HalfEdge* half_edge_of_face;
+
+    void import_face();
+}
+
+// W table
+class Weight
+{
+    float weight;
+
+    void calculate_weight();
+}
+
+//C table
+class Grid
+{
+    std::vector<int> cell_id;
+
+    float x_dimension, y_dimension, z_dimension;
+
+    void create_grid();
+
+
+}
+
+class Cell
+{
+    int cell_id;
+    std::vector<int> vertices_in_cell;
+}
+
+
+//R table
+map<vertex_id, cell_id>
+
+class 

@@ -163,7 +163,7 @@ int main(int argc, const char * argv[])
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
-        Mesh mesh("../../assets/bunny.obj");
+        Mesh mesh("../../assets/test.obj");
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
 		Mesh mesh("./assets/test.obj");
