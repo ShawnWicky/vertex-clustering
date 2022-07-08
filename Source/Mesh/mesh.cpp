@@ -113,6 +113,24 @@ namespace MSc
        }
     }
     */
+    ///-------------------------------------------------
+    /// CellSet Section
+    ///-------------------------------------------------
+    CellSet::CellSet(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension)
+    {
+        this->x_dimension = in_x_dimension;
+        this->y_dimension = in_y_dimension;
+        this->z_dimension = in_z_dimension;
+    }
+
+    void CellSet::ConstructGrid(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension)
+    {
+        
+    }
+    ///-------------------------------------------------
+    /// Mesh Section
+    ///-------------------------------------------------
+
     Mesh::Mesh()
     {
         
@@ -134,7 +152,6 @@ namespace MSc
     {
         
         unsigned int face_id = 0;
-        unsigned int normal_count = 0;
         //each line of the file
         std::string line, token;
         //input file
@@ -143,7 +160,6 @@ namespace MSc
         //read file
         while(!objFile.eof())
         {
-            Vertex vertex;
             Face face;
             std::getline(objFile, line);
             
@@ -155,19 +171,18 @@ namespace MSc
             {
                 std::vector<std::string> pos = Split(line, ' ');
           
-                vertex.position = glm::vec3(std::stof(pos[1]), std::stof(pos[2]), std::stof(pos[3]));
+                glm::vec3 position = glm::vec3(std::stof(pos[1]), std::stof(pos[2]), std::stof(pos[3]));
                 
-                vertices.emplace_back(vertex);
+                positions.emplace_back(position);
             }
             
             if(token == "vn")
             {
                 std::vector<std::string> norm = Split(line, ' ');
                 
-                vertex.normal = glm::vec3(std::stof(norm[1]), std::stof(norm[2]), std::stof(norm[3]));
+                glm::vec3 normal = glm::vec3(std::stof(norm[1]), std::stof(norm[2]), std::stof(norm[3]));
                 
-                vertices[normal_count].normal = vertex.normal;
-                normal_count++;
+                normals.emplace_back(normal);
             }
             
             if(token == "f")
@@ -184,6 +199,8 @@ namespace MSc
                     }
    
                 }
+                face.half_edge_face = nullptr;
+                
                 faces.emplace_back(face);
                 
                 face_id++;
@@ -199,10 +216,21 @@ namespace MSc
                 indices.emplace_back(faces[i].vertices_id[j]);
         }
         
-        for(int i = 0; i < vertices.size(); i++)
+        //set up the vertices table
+        BuildVertices(positions, normals);
+    }
+
+    void Mesh::BuildVertices(std::vector<glm::vec3> iPositions, std::vector<glm::vec3> iNormals)
+    {
+        for(unsigned int i = 0; i < iPositions.size(); i++)
         {
-            std::cout << "v: " << glm::to_string(vertices[i].position) << std::endl;
-            std::cout << "vn: " << glm::to_string(vertices[i].normal) << std::endl;
+            Vertex vertex;
+            
+            vertex.position = iPositions[i];
+            vertex.normal = iNormals[i];
+            vertex.half_edge_vertex = nullptr;
+            
+            vertices.emplace_back(vertex);
         }
     }
 

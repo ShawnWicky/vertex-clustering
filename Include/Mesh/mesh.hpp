@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -49,7 +50,7 @@ namespace MSc
     class HalfEdge;
     class Face;
     class Edge;
-
+    
     class Vertex
     {
     public:
@@ -83,12 +84,9 @@ namespace MSc
     {
         // one of the half edge of the whole edge;
         HalfEdge* half_edge_edge;
-        // the length of edge
-        float length;
-        // id of edge
-        unsigned int edge_id;
-        // weight of the edge (could be the w table)
-        float weight;
+        
+        //id of vertices that consturct the edge
+        unsigned int v0, v1;
     };
 
     class Face
@@ -102,24 +100,111 @@ namespace MSc
         unsigned int face_id;
     };
 
+
+    class Cell
+    {
+    public:
+        //the id of vertices in the cell
+        std::vector<unsigned int> points_in_cell;
+    
+        //the id of edges in the cell
+        std::vector<unsigned int> edges_in_cell;
+    
+        //the id of Cell
+        unsigned int cell_id;
+    
+    };
+
+    class CellSet
+    {
+    public:
+        CellSet(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension);
+        
+        //the id of cells in the grid
+        std::vector<unsigned int> cells;
+    
+        //the total number of cells
+        std::uint32_t cell_count;
+    
+        //xyz dimensions
+        unsigned int x_dimension, y_dimension, z_dimension;
+        
+        //the boundary of the grid in xyz dimensions
+        float x_max, x_min;
+        float y_max, y_min;
+        float z_max, z_min;
+        
+        void ConstructGrid(unsigned int x_dimension, unsigned int y_dimension, unsigned int z_dimension);
+    };
+
+
     class Mesh
     {
     public:
         Mesh();
         
+        ///------------------------------------------------------------
+        ///Vertex Clustering Section
+        ///------------------------------------------------------------
+        
+        //----------------------------------
+        // Parameter
+        //----------------------------------
+        
         //vertex info
         std::vector<Vertex> vertices;
-
         //edge info
         std::vector<Edge> edges;
+        //half edge info
+        std::vector<HalfEdge> half_edges;
         //face info
         std::vector<Face> faces;
-        std::vector<unsigned int> indices;
+        
+        
+        // map key = edge id, map value = edge weight
+        // contains weights of each edge
+        // w table
+        std::map<int, float> w_table;
+        
+        // map key = vertex id, map value = cell id
+        // the cell that each vertex falls in
+        // r table
+        std::map<int, int> r_table;
+        
+        // map key = cell id, map value = vertices id
+        // vertices that falls in each cell
+        // c table
+        std::map<int, std::vector<int>> c_table;
+        
+        //----------------------------------
+        // Functions
+        //----------------------------------
         
         //split the string
         std::vector<std::string> Split(std::string str, char del);
         
+        //build vertices table without halfedge(v table)
+        void BuildVertices(std::vector<glm::vec3> positions, std::vector<glm::vec3> normals);
+        
+        //create half edges for the mesh
+        void BuildHalfEdge(std::vector<Face> &faces);
+        
+        //calculate the weight of each edge
+        std::map<int, float> CalculateWeight(std::vector<Edge> iEdges);
+        
+        //fill the r table
+        std::map<int, int> CalculateRtable(CellSet grid, std::vector<Vertex> vertices);
+        
+        ///------------------------------------------------------------
+        ///OpenGL Section
+        ///------------------------------------------------------------
         //opengl stuff
+        std::vector<glm::vec3> positions;
+        
+        std::vector<glm::vec3> normals;
+        
+        std::vector<unsigned int> indices;
+        
         unsigned int VAO, VBO, EBO;
         
         //Load obj file
@@ -139,32 +224,4 @@ namespace MSc
         void Render();
     };
 
-    class Cell
-    {
-    public:
-        //the id of vertices in the cell
-        std::vector<unsigned int> points_in_cell;
-        
-        //the id of edges in the cell
-        std::vector<unsigned int> edges_in_cell;
-        
-        //the id of Cell
-        unsigned int cell_id;
-        
-    };
-
-    class CellSet
-    {
-    public:
-        //the id of cells in the grid
-        std::vector<unsigned int> cells;
-        
-        //the total number of cells
-        std::uint32_t cell_count;
-        
-        //the boundary of the grid in xyz dimensions
-        float x_max, x_min;
-        float y_max, y_min;
-        float z_max, z_min;
-    };
 }
