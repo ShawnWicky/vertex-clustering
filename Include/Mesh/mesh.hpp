@@ -87,6 +87,8 @@ namespace MSc
         float length;
         // id of edge
         unsigned int edge_id;
+        // weight of the edge (could be the w table)
+        float weight;
     };
 
     class Face
@@ -100,31 +102,69 @@ namespace MSc
         unsigned int face_id;
     };
 
-    class Weight
-    {
-    public:
-        float weight;
-        
-        void CalculateWeight();
-    };
-
-
     class Mesh
     {
     public:
         Mesh();
         
-        std::vector<glm::vec3> vertices_positions;
-        std::vector<glm::vec3> vertices_normals;
+        //vertex info
+        std::vector<Vertex> vertices;
+
+        //edge info
+        std::vector<Edge> edges;
+        //face info
+        std::vector<Face> faces;
         std::vector<unsigned int> indices;
         
+        //split the string
+        std::vector<std::string> Split(std::string str, char del);
+        
+        //opengl stuff
+        unsigned int VAO, VBO, EBO;
+        
         //Load obj file
-        void LoadObj(const char* fileName);
+        void LoadObj(std::string fileName);
         
         //Write obj file
-        void ExportObj(const char* fileName);
+        void ExportObj(std::string fileName);
         
         //load indices array for rendering
         void LoadIndices();
+        
+        //set up the opengl rendering items
+        void SetUp();
+        
+        void Bind();
+        
+        void Render();
+    };
+
+    class Cell
+    {
+    public:
+        //the id of vertices in the cell
+        std::vector<unsigned int> points_in_cell;
+        
+        //the id of edges in the cell
+        std::vector<unsigned int> edges_in_cell;
+        
+        //the id of Cell
+        unsigned int cell_id;
+        
+    };
+
+    class CellSet
+    {
+    public:
+        //the id of cells in the grid
+        std::vector<unsigned int> cells;
+        
+        //the total number of cells
+        std::uint32_t cell_count;
+        
+        //the boundary of the grid in xyz dimensions
+        float x_max, x_min;
+        float y_max, y_min;
+        float z_max, z_min;
     };
 }

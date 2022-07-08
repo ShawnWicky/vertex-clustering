@@ -1,5 +1,7 @@
 #include <iostream>
-#include <queue>
+#include <fstream>
+#include <sstream>
+#include <stdlib.h>
 
 #include <Mesh/mesh.hpp>
 
@@ -9,6 +11,7 @@
 
 namespace MSc
 {
+/*
     Mesh::Mesh(std::string const &fileName)
     {
         Loadobj(fileName);
@@ -109,5 +112,121 @@ namespace MSc
         std::cout << indices[i] << std::endl;
        }
     }
-    
+    */
+    Mesh::Mesh()
+    {
+        
+    };
+
+    std::vector<std::string> Mesh::Split(std::string str, char del)
+    {
+        std::stringstream ss(str);
+        std::string temp;
+        std::vector<std::string> ret;
+        while (getline(ss, temp, del))
+        {
+            ret.emplace_back(temp);
+        }
+        return ret;
+    }
+
+    void Mesh::LoadObj(std::string fileName)
+    {
+        
+        unsigned int face_id = 0;
+        unsigned int normal_count = 0;
+        //each line of the file
+        std::string line, token;
+        //input file
+        std::ifstream objFile(fileName);
+        
+        //read file
+        while(!objFile.eof())
+        {
+            Vertex vertex;
+            Face face;
+            std::getline(objFile, line);
+            
+           // std::cout << line << std::endl;
+            
+            token = line.substr(0, line.find_first_of (" "));
+            
+            if(token == "v")
+            {
+                std::vector<std::string> pos = Split(line, ' ');
+          
+                vertex.position = glm::vec3(std::stof(pos[1]), std::stof(pos[2]), std::stof(pos[3]));
+                
+                vertices.emplace_back(vertex);
+            }
+            
+            if(token == "vn")
+            {
+                std::vector<std::string> norm = Split(line, ' ');
+                
+                vertex.normal = glm::vec3(std::stof(norm[1]), std::stof(norm[2]), std::stof(norm[3]));
+                
+                vertices[normal_count].normal = vertex.normal;
+                normal_count++;
+            }
+            
+            if(token == "f")
+            {
+                //get the token of each line of face
+                std::vector<std::string> face_index = Split(line, ' ');
+                face.face_id = face_id;
+                for(int i = 0; i < face_index.size(); i++)
+                {
+                    if(face_index[i] != "f")
+                    {
+                        std::vector<std::string> sub_token = Split(face_index[i], '/');
+                        face.vertices_id.emplace_back(std::stoi(sub_token[0]));
+                    }
+   
+                }
+                faces.emplace_back(face);
+                
+                face_id++;
+            }
+        }
+        //close file
+        objFile.close();
+        
+        //set up the indices list
+        for(int i = 0; i < faces.size(); i++)
+        {
+            for(int j = 0; j < faces[i].vertices_id.size(); j++)
+                indices.emplace_back(faces[i].vertices_id[j]);
+        }
+        
+        for(int i = 0; i < vertices.size(); i++)
+        {
+            std::cout << "v: " << glm::to_string(vertices[i].position) << std::endl;
+            std::cout << "vn: " << glm::to_string(vertices[i].normal) << std::endl;
+        }
+    }
+
+    void Mesh::SetUp()
+    {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+        
+        glBindVertexArray(VAO);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        
+        //vertex positions
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        // vertex normals
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+      
+    }
 }
