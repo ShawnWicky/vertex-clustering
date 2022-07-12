@@ -113,27 +113,53 @@ namespace MSc
        }
     }
     */
+
+    ///-------------------------------------------------
+    /// HalfEdge Section
+    ///-------------------------------------------------
+    HalfEdge::HalfEdge()
+    {
+
+    }
     ///-------------------------------------------------
     /// CellSet Section
     ///-------------------------------------------------
-    CellSet::CellSet(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension)
+    CellSet::CellSet()
     {
-        this->x_dimension = in_x_dimension;
-        this->y_dimension = in_y_dimension;
-        this->z_dimension = in_z_dimension;
+
     }
 
-    void CellSet::ConstructGrid(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension)
+    void CellSet::ConstructAxises(std::vector<Vertex> iVertices)
     {
-        
+        // 1. Loop through the 'vertices' vector, find the minX, minY, minZ, maxX, maxY, maxZ.
+        // 2. Set (0,0,0) to be the origin of the grid
+        // 3. Set the length X to (maxX - minX + 0.1), length Y to (maxY - minY + 0.1), length Z to (maxZ - minZ + 0.1).
+    }
+
+    void CellSet::ConstructGrid(unsigned int in_dimension)
+    {
+        // 1. divide the lenght of x, y, z axies by thier dimensions to get the length of each cell in thier dimension
+        //  save the length to the parameters length_x, length_y, length_z
+        // 2. set the boundary to the minX->maxX, minY->maxY, minZ->maxZ
+        // 3. loop through the cells to add cells to the grid
+        /// Cell cell;
+        /// for( int i = 0; i < in_dimension; i++ ) (z dimension)
+        ///     for( int j = 0; j < in_dimension; j++ ) (y dimension)
+        ///         for( int m = 0; m < in_dimension; m++ ) (x dimension)
+        ///             cell.lef_bottom_corner_point = glm::vec3( m * length_x + minX, j * length_y + minY, i * length_z + minZ);
+        ///             cell.cell_id = in_dimension * j + (in_dimension)^2 * i + m;
+        ///             CellSet.cells.emplace_back(cell);
     }
     ///-------------------------------------------------
     /// Mesh Section
     ///-------------------------------------------------
 
-    Mesh::Mesh()
+    // the section for Rendering
+    
+    Mesh::Mesh(std::string fileName)
     {
-        
+        LoadObj(fileName);
+        SetUp();
     };
 
     std::vector<std::string> Mesh::Split(std::string str, char del)
@@ -152,6 +178,7 @@ namespace MSc
     {
         
         unsigned int face_id = 0;
+        
         //each line of the file
         std::string line, token;
         //input file
@@ -210,14 +237,20 @@ namespace MSc
         objFile.close();
         
         //set up the indices list
+        
         for(int i = 0; i < faces.size(); i++)
         {
-            for(int j = 0; j < faces[i].vertices_id.size(); j++)
+           for(int j = 0; j < faces[i].vertices_id.size(); j++)
                 indices.emplace_back(faces[i].vertices_id[j]);
         }
         
         //set up the vertices table
         BuildVertices(positions, normals);
+        
+        for(int i = 0; i < positions.size(); i++)
+        {
+            std::cout << glm::to_string(positions[i]) << std::endl;
+        }
     }
 
     void Mesh::BuildVertices(std::vector<glm::vec3> iPositions, std::vector<glm::vec3> iNormals)
@@ -256,5 +289,79 @@ namespace MSc
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
       
+    }
+
+    void Mesh::Render(Shader &shader)
+    {
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    // The section for Simplification
+    void Mesh::BuildHalfEdge(std::vector<Face> &faces)
+    {
+        Edge edge;
+        HalfEdge half_edge;
+        // 1. Loop the faces
+            for ( int i = 0; i < faces.size(); i++)
+        // 2. For each face
+                 for( int j = 0; j < 3; j++ )
+                 {
+                     if( j + 1 > 2)
+                     {
+                         half_edge.end_vertex_id = faces[i].vertices_id[j-2];
+                         half_edge.face_id = faces[i].face_id;
+                         half_edge.half_edge_id = faces[i].face_id;
+                     }
+                     else
+                     {
+                         half_edge.end_vertex_id = faces[i].vertices_id[j+1];
+                         half_edge.face_id = faces[i].face_id;
+                     }
+                     
+                 }
+        // 3. Delete the duplicates
+            ///for(int i = 0; i < edges.size(); i++)
+            ///     for(int j = 0; j < edges.size(); j++)
+            ///         if ( edges[i].v0 == edges[j].v1 && edges[i].v1 == edges[j].v0)
+            ///             edges.erase(j);
+        // 4. finish edges
+        
+        // 5. start half_edge
+    }
+   
+    std::map<unsigned int, std::vector<unsigned int>> Mesh::CalculateCtable(std::vector<Vertex> &iVertices, CellSet iGrid)
+    {
+        //the output c table
+        std::map<unsigned int, std::vector<unsigned int>> c_table;
+        
+        //the vector of vertices in the cell
+        std::vector<unsigned int> vertices_in_cell;
+        
+        //brute force looping
+        
+        //loop through the grid
+        for(unsigned int i = 0; i < iGrid.cells.size(); i++)
+        {
+            //loop through the vertices
+            for(unsigned int j = 0; j < iVertices.size(); j++)
+            {
+                // the vertex on the left/bottom/near boundary of cell is counted in this cell, on the right/top/far boundary of cell is not counted in this cell.
+                if(iVertices[j].position.x >= iGrid.cells[i].left_bottom_corner_point.x &&
+                   iVertices[j].position.x < iGrid.cells[i].left_bottom_corner_point.x + iGrid.length_x &&
+                   iVertices[j].position.y >= iGrid.cells[i].left_bottom_corner_point.y &&
+                   iVertices[j].position.y < iGrid.cells[i].left_bottom_corner_point.y + iGrid.length_y &&
+                   iVertices[j].position.z >= iGrid.cells[i].left_bottom_corner_point.z &&
+                   iVertices[j].position.z < iGrid.cells[i].left_bottom_corner_point.z + iGrid.length_z)
+                {
+                    vertices_in_cell.emplace_back(iVertices[j].vertex_id);
+                }
+            }
+            c_table.insert(std::pair<unsigned int, std::vector<unsigned int>>(i, vertices_in_cell));
+            
+            vertices_in_cell.clear();
+        }
+        return c_table;
     }
 }

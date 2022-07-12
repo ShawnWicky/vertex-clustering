@@ -54,30 +54,33 @@ namespace MSc
     class Vertex
     {
     public:
+        Vertex();
         //position info
         glm::vec3 position;
         //normal info
         glm::vec3 normal;
         //the pointer of the half edge that start from the current vertex
         HalfEdge* half_edge_vertex;
+        //vertex id
+        unsigned int vertex_id;
     };
     
     class HalfEdge
     {
     public:
-        
+        HalfEdge();
         // the vertex at the end of the half edge ( the vertex that half edge point to)
-        Vertex* end_vertex;
+        unsigned int end_vertex_id;
         // the id of the half edge
         unsigned int half_edge_id;
         // id of the other pair(opposite) of the half edge
-        unsigned int pair_id;
+        HalfEdge* pair;
         // the face that current half edge belong to
-        Face* face;
+        unsigned int face_id;
         // the next half edge of current half edge
-        HalfEdge* next;
+        unsigned int next_id;
         // the previous half edge of current half edge
-        HalfEdge* prev;
+        unsigned int prev_id;
     };
 
     class Edge
@@ -104,6 +107,12 @@ namespace MSc
     class Cell
     {
     public:
+        Cell();
+        
+        //this is the point on the left bottom corner of the cell whose
+        //coordinate is based on the new grid coordinate
+        glm::vec3 left_bottom_corner_point;
+        
         //the id of vertices in the cell
         std::vector<unsigned int> points_in_cell;
     
@@ -113,35 +122,46 @@ namespace MSc
         //the id of Cell
         unsigned int cell_id;
     
+        
     };
 
     class CellSet
     {
     public:
-        CellSet(unsigned int in_x_dimension, unsigned int in_y_dimension, unsigned int in_z_dimension);
+        CellSet();
         
-        //the id of cells in the grid
-        std::vector<unsigned int> cells;
+        // the id of cells in the grid
+        std::vector<Cell> cells;
     
-        //the total number of cells
+        // the total number of cells
         std::uint32_t cell_count;
     
-        //xyz dimensions
-        unsigned int x_dimension, y_dimension, z_dimension;
+        //the length of the cell in each axis
+        float length_x, length_y, length_z;
         
-        //the boundary of the grid in xyz dimensions
+        // xyz dimensions (user input)
+        // the dimensions are the number of segments in the axis
+        // In this period you can only form a cube(3D) or square(2D) grid
+        unsigned int in_dimension;
+        
+        // the origin of the grid
+        glm::vec3 origin;
+        // the boundary of the grid in xyz dimensions
         float x_max, x_min;
         float y_max, y_min;
         float z_max, z_min;
         
-        void ConstructGrid(unsigned int x_dimension, unsigned int y_dimension, unsigned int z_dimension);
+        void ConstructAxises(std::vector<Vertex> iVertices);
+        
+        void ConstructGrid(unsigned int in_dimension);
+        
     };
 
 
     class Mesh
     {
     public:
-        Mesh();
+        Mesh(std::string fileName);
         
         ///------------------------------------------------------------
         ///Vertex Clustering Section
@@ -160,7 +180,7 @@ namespace MSc
         //face info
         std::vector<Face> faces;
         
-        
+        CellSet grid;
         // map key = edge id, map value = edge weight
         // contains weights of each edge
         // w table
@@ -180,9 +200,6 @@ namespace MSc
         // Functions
         //----------------------------------
         
-        //split the string
-        std::vector<std::string> Split(std::string str, char del);
-        
         //build vertices table without halfedge(v table)
         void BuildVertices(std::vector<glm::vec3> positions, std::vector<glm::vec3> normals);
         
@@ -195,6 +212,8 @@ namespace MSc
         //fill the r table
         std::map<int, int> CalculateRtable(CellSet grid, std::vector<Vertex> vertices);
         
+        //fill the c table
+        std::map<unsigned int, std::vector<unsigned int>> CalculateCtable(std::vector<Vertex> &iVertices, CellSet iGrid);
         ///------------------------------------------------------------
         ///OpenGL Section
         ///------------------------------------------------------------
@@ -206,6 +225,9 @@ namespace MSc
         std::vector<unsigned int> indices;
         
         unsigned int VAO, VBO, EBO;
+        
+        //split the string
+        std::vector<std::string> Split(std::string str, char del);
         
         //Load obj file
         void LoadObj(std::string fileName);
@@ -221,7 +243,7 @@ namespace MSc
         
         void Bind();
         
-        void Render();
+        void Render(Shader &shader);
     };
 
 }

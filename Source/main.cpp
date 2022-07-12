@@ -163,8 +163,7 @@ int main(int argc, const char * argv[])
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
-        Mesh mesh;
-        mesh.LoadObj("../../assets/test.obj");
+        Mesh mesh("../../assets/test.obj");
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
 		Mesh mesh("./assets/test.obj");
@@ -236,7 +235,7 @@ int main(int argc, const char * argv[])
                 shader.setMat4("model", model);
                 // render the loaded model
                 
-                //mesh.Render(shader);
+                mesh.Render(shader);
                 
                 //camera movement
                 camera.updateCameraPosition(deltaTime);
