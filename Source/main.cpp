@@ -7,7 +7,7 @@
 #include <backends/imgui_impl_opengl3.h>
 
 //project
-#include <Interface.hpp>
+#include <Interface/interface.hpp>
 #include <Mesh/mesh.hpp>
 #include <Render/camera.hpp>
 //OpenGL
@@ -158,43 +158,22 @@ int main(int argc, const char * argv[])
         }
     
         //initilze constructors
-        Inspector inspector;
-        Interface interface(&inspector);
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
         Mesh mesh("../../assets/test.obj");
+        mesh.ExportObj("../../assets/test1.obj");
+        mesh.Initialize();
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
 		Mesh mesh("./assets/test.obj");
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
+        
 #endif
-/*
-        float vertices[] = {
-                // positions                         // colors
-                0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
-                -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
-                0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top
-        };
-
-        unsigned int VBO, VAO;
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        // color attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-*/
-
-
+        CellSet grid;
+        Inspector inspector(&grid);
+        Interface interface(&inspector);
+        
 	        // Main loop
 			while (!glfwWindowShouldClose(window))
 			{
@@ -313,7 +292,7 @@ void glfw_callback_key_press(GLFWwindow* aWindow, int aKey, int /*aScanCode*/, i
 
         // speed up/down
         if (glfwGetKey(aWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-            camera.speedScalar = 2.f;
+            camera.speedScalar = 10.f;
         else if (glfwGetKey(aWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
             camera.speedScalar = 0.05f;
         
@@ -353,6 +332,6 @@ void glfw_callback_key_press(GLFWwindow* aWindow, int aKey, int /*aScanCode*/, i
 
 void glfw_callback_error(int error, const char* description)
 {
-    std::cout << "Glfw Error " << error << ": " << description;
+    std::cout << "Glfw Error " << error << ": " << description << std::endl;
 }
 

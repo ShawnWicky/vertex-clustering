@@ -1,4 +1,4 @@
-#include <Interface.hpp>
+#include <Interface/interface.hpp>
 
 namespace MSc
 {
