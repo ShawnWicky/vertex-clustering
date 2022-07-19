@@ -1,27 +1,52 @@
 #include <iostream>
 
 //Dear ImGui
+
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+//project
+#include <Interface/interface.hpp>
+#include <Mesh/mesh.hpp>
+#include <Render/camera.hpp>
 //OpenGL
-#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-//project
-#include <Interface.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 using namespace MSc;
 
-void GlfwErrorCallback(int error, const char* description)
-{
-    std::cout << "Glfw Error " << error << ": " << description;
-}
+// GLFW callbacks
+void glfw_callback_error(int error, const char* description);
+
+void glfw_callback_framebuffer_size(GLFWwindow* window, int width, int height);
+
+void glfw_callback_key_press(GLFWwindow*, int, int, int, int);
+
+void glfw_callback_cursor_pos(GLFWwindow* window, double xPos, double yPos);
+
+void glfw_callback_mouse_button(GLFWwindow* window, int, int, int);
+
+// settings
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
+
+// camera
+Camera camera = Camera(glm::vec3(-0.5f, 0.02f, -2.3f), glm::radians(0.f), glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+bool enableMouse = false;
+
+// timing
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
 
 int main(int argc, const char * argv[])
 	{
-        glfwSetErrorCallback(GlfwErrorCallback);
+        glfwSetErrorCallback(glfw_callback_error);
         if(!glfwInit())
 	        return EXIT_FAILURE;
 
@@ -38,6 +63,19 @@ int main(int argc, const char * argv[])
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1); // Enable vsync
 
+        //glfw call back function
+        glfwSetFramebufferSizeCallback(window, &glfw_callback_framebuffer_size);
+        //Set the input Mode
+        glfwSetInputMode(window, GLFW_CURSOR, NULL);
+
+        // Configure the GLFW window
+        glfwSetKeyCallback(window, &glfw_callback_key_press);
+
+        glfwSetMouseButtonCallback(window, &glfw_callback_mouse_button);
+
+        glfwSetCursorPosCallback(window, &glfw_callback_cursor_pos);
+    
+    
 	    //Setup Dear ImGui
 	    // Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -113,42 +151,29 @@ int main(int argc, const char * argv[])
 
 		//setup the constructors
         // glew imports all OpenGL extension methods
-        GLenum errorCode = glewInit();
-        if (errorCode != GLEW_OK)
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-             std::cout << "GLEW initialisation error. " << std::string((char*)glewGetErrorString(errorCode));
-            // without GLEW, seg faults will happen
+            std::cout << "Failed to initialize GLAD" << std::endl;
+            return -1;
         }
-
-        Shader shader("C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.vert", "C:\\Users\\sc21yx\\OneDrive - University of Leeds\\Adaptive-Simplification-of-Massive-Meshes\\Shader\\shader.frag");
-
-        float vertices[] = {
-                // positions                         // colors
-                0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
-                -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
-                0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top
-        };
-
-        unsigned int VBO, VAO;
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        // color attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-
-        Inspector inspector;
-		Interface interface(&inspector);
-
+    
+        //initilze constructors
+        
+#ifdef __APPLE__
+        Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
+        Mesh mesh("../../assets/test.obj");
+        mesh.ExportObj("../../assets/test1.obj");
+        mesh.Initialize();
+#else
+        Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
+		Mesh mesh("./assets/test.obj");
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
+        
+#endif
+        CellSet grid;
+        Inspector inspector(&grid);
+        Interface interface(&inspector);
+        
 	        // Main loop
 			while (!glfwWindowShouldClose(window))
 			{
@@ -163,6 +188,13 @@ int main(int argc, const char * argv[])
 
 				ImGui::Render();
 
+                
+                // per-frame time logic
+                // --------------------
+                float currentFrame = static_cast<float>(glfwGetTime());
+                deltaTime = currentFrame - lastFrame;
+                lastFrame = currentFrame;
+                
 				int window_w, window_h;
 				glfwGetFramebufferSize(window, &window_w, &window_h);
 				glViewport(0, 0, window_w, window_h);
@@ -172,18 +204,26 @@ int main(int argc, const char * argv[])
 
                 // render the triangle
                 shader.use();
-                glBindVertexArray(VAO);
-                glDrawArrays(GL_TRIANGLES, 0, 3);
 
-
+                // set up the MVP matrices.
+                glm::mat4 model = glm::mat4(1.0f);
+                glm::mat4 projection = glm::perspective(glm::radians(60.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+                glm::mat4 view = camera.getViewMatrix();
+                shader.setMat4("projection", projection);
+                shader.setMat4("view", view);
+                shader.setMat4("model", model);
+                // render the loaded model
+                
+                mesh.Render(shader);
+                
+                //camera movement
+                camera.updateCameraPosition(deltaTime);
+                
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+                
 				glfwSwapBuffers(window);
                 glfwPollEvents();
 	        }
-
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
 
         //cleanup ImGui
 		ImGui_ImplOpenGL3_Shutdown();
@@ -194,4 +234,104 @@ int main(int argc, const char * argv[])
 		glfwTerminate();
 
 		return EXIT_SUCCESS;
+
 	}
+
+void glfw_callback_framebuffer_size(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+
+void glfw_callback_key_press(GLFWwindow* aWindow, int aKey, int /*aScanCode*/, int aAction, int /*aModifierFlags*/)
+    {
+        if(GLFW_KEY_L == aKey && GLFW_PRESS == aAction)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        else if(GLFW_KEY_F == aKey && GLFW_PRESS ==aAction)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        
+        if (GLFW_KEY_ESCAPE == aKey && GLFW_PRESS == aAction)
+        {
+            glfwSetWindowShouldClose(aWindow, GLFW_TRUE);
+        }
+
+        // forward/backward
+        if (glfwGetKey(aWindow, GLFW_KEY_W) == GLFW_PRESS)
+            camera.speedZ = 1.0f;
+        else if (glfwGetKey(aWindow, GLFW_KEY_S) == GLFW_PRESS)
+            camera.speedZ = -1.0f;
+        else
+        {
+            camera.speedZ = 0.f;
+        }
+
+        // left/right
+        if (glfwGetKey(aWindow, GLFW_KEY_A) == GLFW_PRESS)
+            camera.speedX = -1.f;
+        else if (glfwGetKey(aWindow, GLFW_KEY_D) == GLFW_PRESS)
+            camera.speedX = 1.f;
+        else
+        {
+            camera.speedX = 0.f;
+        }
+
+        // up/down
+        if (glfwGetKey(aWindow, GLFW_KEY_Q) == GLFW_PRESS)
+            camera.speedY = 1.f;
+        else if (glfwGetKey(aWindow, GLFW_KEY_E) == GLFW_PRESS)
+            camera.speedY = -1.f;
+        else
+        {
+            camera.speedY = 0.f;
+        }
+
+        // speed up/down
+        if (glfwGetKey(aWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            camera.speedScalar = 10.f;
+        else if (glfwGetKey(aWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+            camera.speedScalar = 0.05f;
+        
+       // std::cout <<glm::to_string(camera.position) << std::endl;
+    }
+
+    void glfw_callback_cursor_pos(GLFWwindow* window, double xPos, double yPos)
+    {
+
+        if (enableMouse == true)
+        {
+            if (firstMouse)
+            {
+                lastX = (float)xPos;
+                lastY = (float)yPos;
+                firstMouse = false;
+            }
+
+            float deltaX, deltaY;
+            deltaX = (float)xPos - lastX;
+            deltaY = lastY - (float)yPos;
+
+            lastX = (float)xPos;
+            lastY = (float)yPos;
+
+            camera.processMouseMovement(deltaX, deltaY, deltaTime);
+        }
+    }
+
+    void glfw_callback_mouse_button(GLFWwindow* window, int aButton, int aAction, int)
+    {
+        if (GLFW_MOUSE_BUTTON_RIGHT == aButton && GLFW_PRESS == aAction)
+        {
+            enableMouse = !enableMouse;
+        }
+    }
+
+void glfw_callback_error(int error, const char* description)
+{
+    std::cout << "Glfw Error " << error << ": " << description << std::endl;
+}
+
