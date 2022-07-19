@@ -75,10 +75,8 @@ namespace MSc
         ///--------------------------------------
         /// functions
         ///--------------------------------------
-        
-        static std::vector<Edge> BuildEdge(std::vector<Face> faces, std::vector<Vertex> vertices);
-        
         bool isBoundary();
+        
     private:
         // Compare function for std::sort
         static bool Compare(Edge e0, Edge e1);
@@ -124,7 +122,7 @@ namespace MSc
         std::vector<Cell> cells;
         
         // the total number of cells
-        std::uint32_t cell_count;
+        std::uint32_t cell_count = 0;
     
         //the length of the cell in each axis
         float length_x, length_y, length_z;
@@ -132,16 +130,16 @@ namespace MSc
         // xyz dimensions (user input)
         // the dimensions are the number of segments in the axis
         // In this period you can only form a cube(3D) or square(2D) grid
-        int in_dimension;
+        int in_dimension = 0;
         
         // the boundary of the grid in xyz dimensions
         float x_max, x_min;
         float y_max, y_min;
         float z_max, z_min;
         
-        void ConstructAxises(std::vector<Vertex> &iVertices);
+        void ConstructAxises(std::vector<Vertex> &iVertices, int dimension);
         
-        void ConstructGrid(unsigned int in_dimension);
+        void ConstructGrid(int in_dimension, std::vector<Cell> &iCells);
         
     };
 
@@ -154,7 +152,7 @@ namespace MSc
     class Mesh
     {
     public:
-        Mesh(std::string fileName);
+        Mesh(std::string filName);
         
         ///------------------------------------------------------------
         ///Vertex Clustering Section
@@ -173,8 +171,6 @@ namespace MSc
         //face info
         std::vector<Face> faces;
         
-        CellSet grid;
-
         // map key = vertex id, map value = weight of the vertex
         // W table
         std::map<int, float> weight_of_vertex;
@@ -187,7 +183,7 @@ namespace MSc
         // map key = cell id, map value = vertices id
         // vertices that falls in each cell
         // C table
-        std::map<int, std::vector<int>> vertices_in_cell;
+        std::map<unsigned int, std::vector<unsigned int>> vertices_in_cell;
         
         // SV table
         std::vector<Vertex> simplified_vertices;
@@ -207,13 +203,21 @@ namespace MSc
         //----------------------------------
         
         // build vertices table without halfedge(v table)
-        void BuildVertices(std::vector<glm::vec3> positions, std::vector<glm::vec3> normals);
+        void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals);
         
         // create half edges for the mesh
-        void BuildHalfEdge(std::vector<Edge> iEdges, std::vector<Vertex> iVertices);
+        std::vector<HalfEdge> BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices);
+        
+        // create edges for the mesh
+        std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
 
+        
+        void AddHalfEdgeToFace(std::vector<HalfEdge> &iHalfEdges);
+        
+        void AddHalfEdgeToVertex(std::vector<HalfEdge> &iHalfEdges);
+        
         // calculate the weight of each vertex
-        std::map<int, float> CalculateWeight(std::vector<Vertex> iVertices, std::vector<Edge> iEdges);
+        std::map<int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
         
         // fill the r table
         std::map<int, int> CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices);
@@ -234,7 +238,7 @@ namespace MSc
         // calculate the new vertex normal for all vertices from ST table
         void CalculateVertexNormal(std::vector<Face> iFace);
         
-        void Initialize();
+        void Initialize(CellSet &iGrid, int dimension);
         ///------------------------------------------------------------
         ///OpenGL Section
         ///------------------------------------------------------------

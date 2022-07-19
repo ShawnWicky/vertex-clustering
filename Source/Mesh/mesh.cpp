@@ -50,62 +50,6 @@ namespace MSc
         this->half_edge_edge = nullptr;
     }
 
-    std::vector<Edge> Edge::BuildEdge(std::vector<Face> iFaces, std::vector<Vertex> iVertices)
-    {
-        //the temporary vector of edges that need to be returned
-        std::vector<Edge> temp(3 * iFaces.size());
-    
-        // 1. loop through the faces
-        // 2. for each face construct the edge
-        for(int i = 0; i < iFaces.size(); i++)
-        {
-            Edge edge0;
-            edge0.half_edge_edge = nullptr;
-            
-            Edge edge1;
-            edge1.half_edge_edge = nullptr;
-            
-            Edge edge2;
-            edge2.half_edge_edge = nullptr;
-            
-            edge0.start_vertex = iFaces[i].vertices_id[0];
-            edge0.end_vertex = iFaces[i].vertices_id[1];
-            
-            edge1.start_vertex = iFaces[i].vertices_id[1];
-            edge1.end_vertex = iFaces[i].vertices_id[2];
-            
-            edge2.start_vertex = iFaces[i].vertices_id[2];
-            edge2.end_vertex = iFaces[i].vertices_id[0];
-            
-            temp[3*i] = edge0;
-            temp[3*i+1] = edge1;
-            temp[3*i+2] = edge2;
-        }
-  
-        // remove duplicates
-        for(unsigned int i = 0; i < temp.size(); i++)
-        {
-            for(unsigned int j = 0; j < temp.size(); j++)
-            {
-                if(temp[i].start_vertex == temp[j].end_vertex && temp[i].end_vertex == temp[j].start_vertex)
-                {
-                    temp.erase(temp.begin()+j);
-                }
-            }
-        }
-   
-        // calculate length
-        for(unsigned int i = 0; i < temp.size(); i++)
-        {
-            glm::vec3 e0 = iVertices[temp[i].start_vertex].position;
-            glm::vec3 e1 = iVertices[temp[i].end_vertex].position;
-            
-            temp[i].length = glm::distance(e0, e1);
-        }
-        
-        
-        return temp;
-    }
     ///-------------------------------------------------
     /// Face Section
     ///-------------------------------------------------
@@ -119,7 +63,9 @@ namespace MSc
     ///-------------------------------------------------
     Cell::Cell()
     {
-        
+        this->left_bottom_near_point = glm::vec3(0.f,0.f,0.f);
+        this->cell_id = -1;
+        this->number_of_vertices = 0;
     }
 
     ///-------------------------------------------------
@@ -130,7 +76,7 @@ namespace MSc
 
     }
 
-    void CellSet::ConstructAxises(std::vector<Vertex> &iVertices)
+    void CellSet::ConstructAxises(std::vector<Vertex> &iVertices, int dimension)
     {
         // 1. Loop through the 'vertices' vector, find the minX, minY, minZ, maxX, maxY, maxZ.
         // 2. Set (0,0,0) to be the origin of the grid
@@ -158,9 +104,9 @@ namespace MSc
         z_min = *std::min_element(z_pos.begin(), z_pos.end());
         z_max = *std::max_element(z_pos.begin(), z_pos.end());
         
-        length_x = x_max - x_min + 0.01f;
-        length_y = y_max - y_min + 0.01f;
-        length_z = z_max - z_min + 0.01f;
+        length_x = (x_max - x_min) / dimension;
+        length_y = (y_max - y_min) / dimension;
+        length_z = (z_max - z_min) / dimension;
         
         //clear the vector
         x_pos.clear();
@@ -168,7 +114,7 @@ namespace MSc
         z_pos.clear();
     }
 
-    void CellSet::ConstructGrid(unsigned int in_dimension)
+    void CellSet::ConstructGrid(int in_dimension, std::vector<Cell> &iCells)
     {
         // 1. divide the lenght of x, y, z axies by thier dimensions to get the length of each cell in thier dimension
         //  save the length to the parameters length_x, length_y, length_z
@@ -180,8 +126,9 @@ namespace MSc
                  for( int m = 0; m < in_dimension; m++ ) //(x dimension)
                  {
                      cell.left_bottom_near_point = glm::vec3( m * length_x + x_min, j * length_y + y_min, i * length_z + z_min);
-                     cell.cell_id = in_dimension * j + (in_dimension)^2 * i + m;
-                     cells.emplace_back(cell);
+                     cell.cell_id = m + in_dimension * j + (in_dimension)^2 * i;
+                     iCells.emplace_back(cell);
+                     cell_count++;
                  }
     }
 
@@ -255,10 +202,11 @@ namespace MSc
                 face.face_id = face_id;
                 for(int i = 0; i < face_index.size(); i++)
                 {
-                    if(face_index[i] != "f")
+                    if(face_index[i] != "f" )
                     {
                         std::vector<std::string> sub_token = Split(face_index[i], '/');
-                        face.vertices_id.emplace_back(std::stoi(sub_token[0]) - 1);
+                        
+                        face.vertices_id.emplace_back(std::stoi(sub_token[0])-1);
                     }
    
                 }
@@ -282,10 +230,6 @@ namespace MSc
         
         //set up the vertices table
         BuildVertices(positions, normals);
-        
-        //set up edges
-        edges = Edge::BuildEdge(faces, vertices);
-        
     }
 
     void Mesh::ExportObj(std::string fileName)
@@ -317,9 +261,9 @@ namespace MSc
                 for(std::uint8_t j = 0; j < face.vertices_id.size(); j++)
                 {
                     if(j == 2)
-                        writeFile << face.vertices_id[j] << "//" << face.vertices_id[j] << "\n";
+                        writeFile << face.vertices_id[j]+1 << "//" << face.vertices_id[j]+1 << "\n";
                     else
-                        writeFile << face.vertices_id[j] << "//" << face.vertices_id[j] << " ";
+                        writeFile << face.vertices_id[j]+1 << "//" << face.vertices_id[j]+1 << " ";
                 }
             }
             writeFile.close();
@@ -327,7 +271,7 @@ namespace MSc
         
     }
 
-    void Mesh::BuildVertices(std::vector<glm::vec3> iPositions, std::vector<glm::vec3> iNormals)
+    void Mesh::BuildVertices(std::vector<glm::vec3> &iPositions, std::vector<glm::vec3> &iNormals)
     {
         for(unsigned int i = 0; i < iPositions.size(); i++)
         {
@@ -378,40 +322,92 @@ namespace MSc
 
     // The section for Simplification
 
-    void Mesh::BuildHalfEdge(std::vector<Edge> iEdges, std::vector<Vertex> iVertices)
+    std::vector<HalfEdge> Mesh::BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices)
     {
+        std::vector<HalfEdge> temp;
+        
         Edge edge;
         HalfEdge half_edge;
         // 1. Loop the faces
-            for ( int i = 0; i < faces.size(); i++)
-        // 2. For each face
-                 for( int j = 0; j < 3; j++ )
-                 {
-                     if( j + 1 > 2)
-                     {
-                         half_edge.end_vertex->vertex_id = faces[i].vertices_id[j-2];
-                         half_edge.face = &faces[i];
-                         half_edge.half_edge_id = faces[i].face_id;
-                     }
-                     else
-                     {
-                         half_edge.end_vertex->vertex_id = faces[i].vertices_id[j+1];
-                         half_edge.face = &faces[i];
-                         half_edge.half_edge_id = faces[i].face_id;
-                     }
-                     
-                 }
-        // 3. Delete the duplicates
-            ///for(int i = 0; i < edges.size(); i++)
-            ///     for(int j = 0; j < edges.size(); j++)
-            ///         if ( edges[i].v0 == edges[j].v1 && edges[i].v1 == edges[j].v0)
-            ///             edges.erase(j);
-        // 4. finish edges
+        for ( int i = 0; i < iFaces.size(); i++)
+        {
+            unsigned int counter = 0;
+            // 2. For each face add half edges to the temp vector
+            for( int j = 0; j < 3; j++ )
+            {
+                if( j + 1 > 2)
+                {
+                    half_edge.end_vertex = &iVertices[iFaces[i].vertices_id[j-2]];
+                    half_edge.face = &iFaces[i];
+                    half_edge.half_edge_id = 3 * iFaces[i].face_id + counter;
+                }
+                else
+                {
+                    half_edge.end_vertex = &iVertices[iFaces[i].vertices_id[j+1]];
+                    half_edge.face = &iFaces[i];
+                    half_edge.half_edge_id = 3 * iFaces[i].face_id + counter;
+                }
+                temp.emplace_back(half_edge);
+            }
+        }
         
-        // 5. start half_edge
+        // 3.
+        
+        return temp;
     }
 
- 
+    std::vector<Edge> Mesh::BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
+    {
+        //the temporary vector of edges that need to be returned
+        std::vector<Edge> temp(3 * iFaces.size());
+        
+        Edge edge0;
+        Edge edge1;
+        Edge edge2;
+        // 1. loop through the faces
+        // 2. for each face construct the edge
+        for(int i = 0; i < iFaces.size(); i++)
+        {
+            edge0.start_vertex = iFaces[i].vertices_id[0];
+            edge0.end_vertex = iFaces[i].vertices_id[1];
+            
+            edge1.start_vertex = iFaces[i].vertices_id[1];
+            edge1.end_vertex = iFaces[i].vertices_id[2];
+            
+            edge2.start_vertex = iFaces[i].vertices_id[2];
+            edge2.end_vertex = iFaces[i].vertices_id[0];
+            
+            temp[3*i] = edge0;
+            temp[3*i+1] = edge1;
+            temp[3*i+2] = edge2;
+        }
+
+        // remove duplicates
+        for(unsigned int i = 0; i < temp.size(); i++)
+        {
+            for(unsigned int j = 0; j < temp.size(); j++)
+            {
+                if(temp[i].start_vertex == temp[j].end_vertex && temp[i].end_vertex == temp[j].start_vertex)
+                {
+                    temp.erase(temp.begin()+j);
+                }
+            }
+        }
+
+        // calculate length
+        for(unsigned int i = 0; i < temp.size(); i++)
+        {
+            glm::vec3 e0 = iVertices[temp[i].start_vertex].position;
+            glm::vec3 e1 = iVertices[temp[i].end_vertex].position;
+            
+            temp[i].length = glm::distance(e0, e1);
+        }
+        
+
+        return temp;
+    }
+
+
     //cell_table -> std::map<int, std::vector<unsigned int>>
     //weight_table -> std::map<int, float>
     void Mesh::CalculateSVtable(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices)
@@ -474,31 +470,37 @@ namespace MSc
         
         //the vector of vertices in the cell
         std::vector<unsigned int> vertices_in_cell;
-        
-        //brute force looping
-        
+
         //loop through the grid
         for(unsigned int i = 0; i < iGrid.cells.size(); i++)
         {
-            //count the total number of vertices in the cell
-            iGrid.cells[i].number_of_vertices = 0;
-            
             //loop through the vertices
             for(unsigned int j = 0; j < iVertices.size(); j++)
             {
-                // the vertex on the left/bottom/near boundary of cell is counted in this cell, on the right/top/far boundary of cell is not counted in this cell.
-                if(iVertices[j].position.x >= iGrid.cells[i].left_bottom_near_point.x &&
-                   iVertices[j].position.x < iGrid.cells[i].left_bottom_near_point.x + iGrid.length_x &&
-                   iVertices[j].position.y >= iGrid.cells[i].left_bottom_near_point.y &&
-                   iVertices[j].position.y < iGrid.cells[i].left_bottom_near_point.y + iGrid.length_y &&
-                   iVertices[j].position.z >= iGrid.cells[i].left_bottom_near_point.z &&
-                   iVertices[j].position.z < iGrid.cells[i].left_bottom_near_point.z + iGrid.length_z)
+                // shift the vertex to the positive half of the axis
+                glm::vec3 shifted_vertex = iVertices[j].position - glm::vec3(iGrid.x_min, iGrid.y_min, iGrid.z_min);
+                
+                // get he floor number of the (shifted vertex position / the length of a cell in each dimension)
+                unsigned int x_dimension = static_cast<unsigned int>(std::floor(shifted_vertex.x / iGrid.length_x));
+                unsigned int y_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.y / iGrid.length_y));
+                unsigned int z_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.z / iGrid.length_z));
+                
+                // if the vertex is fall on the top / right / far plane of the whole cluster
+                if(x_dimension == iGrid.in_dimension)
+                    x_dimension = x_dimension - 1;
+                else if (y_dimension == iGrid.in_dimension)
+                    y_dimension = y_dimension - 1;
+                else if (z_dimension == iGrid.in_dimension)
+                    z_dimension = z_dimension - 1;
+                
+                // convert the x,y,z dimension of the cell to cell id
+                if(iGrid.cells[i].cell_id == (x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * (iGrid.in_dimension)^2)))
                 {
-                    vertices_in_cell.emplace_back(iVertices[j].vertex_id);
-                    iGrid.cells[i].number_of_vertices++;
+                    vertices_in_cell.emplace_back(vertices[j].vertex_id);
                 }
             }
-            c_table.insert(std::make_pair(i, vertices_in_cell));
+            
+            c_table.insert(std::make_pair(iGrid.cells[i].cell_id, vertices_in_cell));
             
             vertices_in_cell.clear();
         }
@@ -506,7 +508,7 @@ namespace MSc
     }
  
     // W table
-    std::map<int, float> Mesh::CalculateWeight(std::vector<Vertex> iVertices, std::vector<Edge> iEdges)
+    std::map<int, float> Mesh::CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges)
     {
         // 1. loop through the vertices
         // 2. find all edges attached on the vertex
@@ -573,8 +575,18 @@ namespace MSc
         return {points, edges, faces};
     }
 
-    void Mesh::Initialize()
+    void Mesh::Initialize(CellSet &iGrid, int dimension)
     {
+        edges = BuildEdge(faces, vertices);
+        half_edges = BuildHalfEdge(faces, edges, vertices);
+        
+        iGrid.ConstructAxises(vertices, dimension);
+        iGrid.ConstructGrid(dimension, iGrid.cells);
+        
+        representative_vertex_of_cell = CalculateRepresentativeVertices(iGrid, vertices);
+        
+        vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
+        
         weight_of_vertex = CalculateWeight(vertices, edges);
         
     }

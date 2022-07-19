@@ -8,12 +8,12 @@ namespace MSc
     class Inspector
     {
     public:
-        Inspector(CellSet *iGrid);
+        Inspector(CellSet &iGrid, Mesh &iMesh);
         
         void ShowGuiWindow(bool* outIsOpen);
         
     private:
-        Mesh *_mesh;
-        CellSet *_grid;
+        Mesh &_mesh;
+        CellSet &_grid;
     };
 }

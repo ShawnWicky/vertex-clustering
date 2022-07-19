@@ -162,16 +162,13 @@ int main(int argc, const char * argv[])
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
         Mesh mesh("../../assets/test.obj");
-        mesh.ExportObj("../../assets/test1.obj");
-        mesh.Initialize();
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-		Mesh mesh("./assets/test.obj");
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
-        
+        Mesh mesh("./assets/test.obj");
+    
 #endif
         CellSet grid;
-        Inspector inspector(&grid);
+        Inspector inspector(grid, mesh);
         Interface interface(&inspector);
         
 	        // Main loop
