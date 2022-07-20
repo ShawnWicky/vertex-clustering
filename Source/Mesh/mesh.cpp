@@ -10,7 +10,6 @@
 
 #include <glad/glad.h>
 #include <glm/gtx/string_cast.hpp>
-#include <assimp/importer.hpp>
 
 namespace MSc
 {

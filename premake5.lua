@@ -20,13 +20,13 @@ project "MScProject"
     targetdir "bin/%{cfg.buildcfg}"
     objdir "obj/%{cfg.buildcfg}"
 
-    sysincludedirs{"Include/", "libs/glad/include/", "libs/glfw/include/","libs/glm/", "libs/imgui/", "libs/assimp/include/"}
+    sysincludedirs{"Include/", "libs/glad/include/", "libs/glfw/include/","libs/glm/", "libs/imgui/"}
 
     files {"Source/**.cpp"}
     files {"Shader/*.vert", "Shader/*.frag"}
     files {"Include/**.hpp"}
 
-    links {"GLFW", "GLM", "GLAD", "ImGui", "Assimp"}
+    links {"GLFW", "GLM", "GLAD", "ImGui"}
 
     filter {"system:Linux", "action:gmake"}
         links {"dl", "X11", "pthread"}
@@ -54,4 +54,3 @@ include "libs/glfw.lua"
 include "libs/glad.lua"
 include "libs/glm.lua"
 include "libs/imgui.lua"
-include "libs/assimp.lua"
