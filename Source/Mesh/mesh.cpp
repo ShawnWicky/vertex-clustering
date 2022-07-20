@@ -120,12 +120,13 @@ namespace MSc
         // 2. set the boundary to the minX->maxX, minY->maxY, minZ->maxZ
         // 3. loop through the cells to add cells to the grid
          Cell cell;
-         for( int i = 0; i < in_dimension; i++ ) //(z dimension)
-             for( int j = 0; j < in_dimension; j++ ) //(y dimension)
-                 for( int m = 0; m < in_dimension; m++ ) //(x dimension)
+         for(unsigned int i = 0; i < in_dimension; i++ ) //(z dimension)
+             for(unsigned int j = 0; j < in_dimension; j++ ) //(y dimension)
+                 for(unsigned int m = 0; m < in_dimension; m++ ) //(x dimension)
                  {
+                     
                      cell.left_bottom_near_point = glm::vec3( m * length_x + x_min, j * length_y + y_min, i * length_z + z_min);
-                     cell.cell_id = m + in_dimension * j + (in_dimension)^2 * i;
+                     cell.cell_id = m + in_dimension * j + std::powf((float)in_dimension, 2.f) * i;
                      iCells.emplace_back(cell);
                      cell_count++;
                  }
@@ -493,7 +494,7 @@ namespace MSc
                     z_dimension = z_dimension - 1;
                 
                 // convert the x,y,z dimension of the cell to cell id
-                if(iGrid.cells[i].cell_id == (x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * (iGrid.in_dimension)^2)))
+                if(iGrid.cells[i].cell_id == (x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * std::powf((float)iGrid.in_dimension,2.f))))
                 {
                     vertices_in_cell.emplace_back(vertices[j].vertex_id);
                 }
@@ -539,28 +540,11 @@ namespace MSc
         return weight_of_vertex;
     }
 
-
     // R table
     std::map<int, int> Mesh::CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices)
     {
         std::map<int, int> temp;
-        // loop through the V table(all vertices)
-        for(unsigned int i = 0; i < iVertices.size(); i++)
-        {
-            // loop through the grid(cluster)
-            for(unsigned int j = 0; j < iGrid.cells.size(); j++)
-            {
-                if(iVertices[i].position.x < iGrid.cells[j].left_bottom_near_point.x + iGrid.length_x &&
-                   iVertices[i].position.x >= iGrid.cells[j].left_bottom_near_point.x &&
-                   iVertices[i].position.y < iGrid.cells[j].left_bottom_near_point.y + iGrid.length_y &&
-                   iVertices[i].position.y >= iGrid.cells[j].left_bottom_near_point.y &&
-                   iVertices[i].position.z < iGrid.cells[j].left_bottom_near_point.z + iGrid.length_z &&
-                   iVertices[i].position.z >= iGrid.cells[j].left_bottom_near_point.z)
-                {
-                    temp.insert(std::make_pair(iVertices[i].vertex_id, iGrid.cells[j].cell_id));
-                }
-            }
-        }
+
         
         return temp;
     }
@@ -590,4 +574,24 @@ namespace MSc
         
     }
 
+    void Mesh::Terminate(Mesh &iMesh)
+    {
+        //Simplification parameters
+        iMesh.vertices.clear();
+        iMesh.edges.clear();
+        iMesh.half_edges.clear();
+        iMesh.faces.clear();
+        iMesh.weight_of_vertex.clear();
+        iMesh.representative_vertex_of_cell.clear();
+        iMesh.vertices_in_cell.clear();
+        iMesh.simplified_vertices.clear();
+        iMesh.simplified_points.clear();
+        iMesh.simplified_edges.clear();
+        iMesh.simplified_triangles.clear();
+
+        //OpenGL parmeters
+        iMesh.positions.clear();
+        iMesh.normals.clear();
+        iMesh.indices.clear();
+    }
 }

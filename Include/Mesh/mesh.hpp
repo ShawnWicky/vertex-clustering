@@ -235,6 +235,8 @@ namespace MSc
         void CalculateVertexNormal(std::vector<Face> iFace);
         
         void Initialize(CellSet &iGrid, int dimension);
+
+        void Terminate(Mesh &iMesh);
         ///------------------------------------------------------------
         ///OpenGL Section
         ///------------------------------------------------------------
