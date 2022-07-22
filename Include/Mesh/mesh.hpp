@@ -118,7 +118,7 @@ namespace MSc
         std::vector<Cell> cells;
         
         // the total number of cells
-        std::uint32_t cell_count = 0;
+        std::uint32_t cell_count;
     
         //the length of the cell in each axis
         float length_x, length_y, length_z;
@@ -126,7 +126,7 @@ namespace MSc
         // xyz dimensions (user input)
         // the dimensions are the number of segments in the axis
         // In this period you can only form a cube(3D) or square(2D) grid
-        int in_dimension = 0;
+        unsigned int in_dimension;
         
         // the boundary of the grid in xyz dimensions
         float x_max, x_min;
@@ -171,7 +171,7 @@ namespace MSc
         // W table
         std::map<int, float> weight_of_vertex;
         
-        // map key = vertex id, map value = cell id
+        // map key = cell id, map value = vertex id
         // the cell that each vertex falls in
         // R table
         std::map<unsigned int, unsigned int> representative_vertex_of_cell;
@@ -228,7 +228,11 @@ namespace MSc
         
         // elimination
         // complete the ST/SE/SP table
-        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(std::vector<Face> iFaces, std::map<unsigned int, unsigned int> &iRtable, cell_table &iCtale, CellSet &iGrid, std::vector<Vertex> &iVertices);
+        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(  std::vector<Face> iFaces, 
+                                                                                            std::map<unsigned int, unsigned int> &iRtable, /*R table*/
+                                                                                            cell_table &iCtale, /*C table*/
+                                                                                            CellSet &iGrid, /*Grid*/
+                                                                                            std::vector<Vertex> &iVertices /*SV table*/ );
         
         // reduce duplicates for simplifed mesh
         void ReduceDuplicates();

@@ -19,7 +19,7 @@ namespace MSc
     ///-------------------------------------------------
     Vertex::Vertex()
     {
-        
+       
     }
 
     ///-------------------------------------------------
@@ -73,7 +73,17 @@ namespace MSc
     ///-------------------------------------------------
     CellSet::CellSet()
     {
-
+        this->length_x = 0.f;
+        this->length_y = 0.f;
+        this->length_z = 0.f;
+        this->cell_count = 0;
+        this->in_dimension = 0;
+        this->x_max = 0.f;
+        this->x_min = 0.f;
+        this->y_max = 0.f;
+        this->y_min = 0.f;
+        this->z_max = 0.f;
+        this->z_min = 0.f;
     }
 
     void CellSet::ConstructAxises(std::vector<Vertex> &iVertices, int dimension)
@@ -581,7 +591,7 @@ namespace MSc
         std::vector<Vertex> points;
         
                 // vertex id   // cell id
-        std::map<unsigned int, unsigned int> cell_No_of_vertex;
+        std::map<unsigned int, unsigned int> cell_No_of_vertex; // the map of original vertex and cell id
         // 1. loop through R table
         // 2. loop through Faces
         // 3. if 3 vertex of the triangle in the same cell, eliminate it to a vertex
@@ -609,28 +619,76 @@ namespace MSc
         {
             Edge edge;
             Vertex vertex;
-            //if two vertices of the face is in the same cell
-            if(cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[1]))
-            {
-                //将这两个点合成一个点，并连接三角形的另一个点
-            }
-            else if(cell_No_of_vertex.find(face.vertices_id[1]) == cell_No_of_vertex.find(face.vertices_id[2]))
-            {
-                
-            }
-            else if(cell_No_of_vertex.find(face.vertices_id[2]) == cell_No_of_vertex.find(face.vertices_id[0]))
-            {
-                
-            }
+            Face face;
             //if all vertices of the face is in the same cell
-            else if(cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[1]) &&             cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[2]))
+            if(cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]) &&
+               cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[2]))
             {
-                //将三角形简化为一个点
+            //将三角形简化为一个点
+                vertex.position = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].position;
+                vertex.normal = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].normal;
+                vertex.half_edge_vertex = nullptr;
+                vertex.vertex_id = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id;
+
+                points.emplace_back(vertex);
             }
+            //if two vertices of the face is in the same cell
+            else if(cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]))
+            {
+                edge.start_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id;
+                edge.end_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))].vertex_id;
+                edge.half_edge_edge = nullptr;
+
+                edges.emplace_back(edge);
+            }
+            else if(cell_No_of_vertex.at(face.vertices_id[1]) == cell_No_of_vertex.at(face.vertices_id[2]))
+            {
+                edge.start_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id;
+                edge.end_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id;
+                edge.half_edge_edge = nullptr;
+
+                edges.emplace_back(edge);
+            }
+            else if(cell_No_of_vertex.at(face.vertices_id[2]) == cell_No_of_vertex.at(face.vertices_id[0]))
+            {
+                edge.start_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id;
+                edge.end_vertex = iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id;
+                edge.half_edge_edge = nullptr;
+
+                edges.emplace_back(edge);
+            }
+          
             //if all vertices are in different cell
             else
             {
-                //保留三角形
+                face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id);
+                face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id);
+                face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))].vertex_id);
+                face.half_edge_face = nullptr;
+                face.face_id = 0;
+
+                faces.emplace_back(face);
+            }
+
+            // find edges that is on the boundary of the mesh
+            for (auto const& edge : edges)
+            {
+                for (auto const& face : faces)
+                {
+                    if (edge.start_vertex == face.vertices_id[0] && edge.end_vertex == face.vertices_id[1] || 
+                        edge.start_vertex == face.vertices_id[1] && edge.end_vertex == face.vertices_id[0] ||
+                        edge.start_vertex == face.vertices_id[0] && edge.end_vertex == face.vertices_id[2] || 
+                        edge.start_vertex == face.vertices_id[2] && edge.end_vertex == face.vertices_id[0] ||
+                        edge.start_vertex == face.vertices_id[2] && edge.end_vertex == face.vertices_id[1] ||
+                        edge.start_vertex == face.vertices_id[1] && edge.end_vertex == face.vertices_id[2])
+                    {
+                        // delete the edge;
+                    }
+                    else
+                    {
+                        // keep the edge;
+                    }
+                }
             }
         }
         
