@@ -4,6 +4,7 @@
 #include <utility>
 #include <queue>
 #include <algorithm>
+#include <unordered_map>
 #include <stdlib.h>
 
 #include <Mesh/mesh.hpp>
@@ -389,7 +390,9 @@ namespace MSc
             {
                 if(temp[i].start_vertex == temp[j].end_vertex && temp[i].end_vertex == temp[j].start_vertex)
                 {
+                    //when find the same edge, delete and break out of the inner loop to faster the program
                     temp.erase(temp.begin()+j);
+                    break;
                 }
             }
         }
@@ -410,8 +413,9 @@ namespace MSc
 
     //cell_table -> std::map<int, std::vector<unsigned int>>
     //weight_table -> std::map<int, float>
-    void Mesh::CalculateSVtable(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices)
+    std::vector<Vertex> Mesh::CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices)
     {
+        std::vector<Vertex> temp;
         
         unsigned int new_vertex_id = 0;
         // 1. loop through the cells
@@ -424,18 +428,18 @@ namespace MSc
                 //do nothing
             }
             // when there is only one vertex in the cell
-            else if(cell.second.size() < 2 && cell.second.size() > 0)
+            else if(cell.second.size() == 1)
             {
                 vertex.position = iVertices[cell.second[0]].position;
                 vertex.vertex_id = new_vertex_id;
                 vertex.half_edge_vertex = nullptr;
                 
-                simplified_vertices.emplace_back(vertex);
+                temp.emplace_back(vertex);
                 
                 new_vertex_id++;
             }
             // when there are more than one vertex in the cell
-            else
+            else if(cell.second.size() >= 2)
             {
                 // use for temporary saving the represetative vertex position
                 glm::vec3 temp_pos = glm::vec3(0.f, 0.f, 0.f);
@@ -445,7 +449,7 @@ namespace MSc
                 // 2. loop through the vertices in cell
                 for(auto id: cell.second)
                     cell_total_weight = Wtable[id] + cell_total_weight;
-            
+    
                 for(auto id: cell.second)
                     // representative vertex = (vertex.position * ( vertex_weight / total_vertices_weight_cell)) * all_vertices
                 temp_pos = temp_pos + iVertices[id].position * Wtable[id] / cell_total_weight;
@@ -454,12 +458,38 @@ namespace MSc
                 vertex.vertex_id = new_vertex_id;
                 vertex.half_edge_vertex = nullptr;
                 
-                simplified_vertices.emplace_back(vertex);
+                temp.emplace_back(vertex);
                 
                 new_vertex_id++;
             }
         }
         
+        return temp;
+    }
+
+    unsigned int Mesh::GetCellid(Vertex &iVertex, CellSet &iGrid)
+    {
+        unsigned int cell_id;
+        
+        // shift the vertex to the positive half of the axis
+        glm::vec3 shifted_vertex = iVertex.position - glm::vec3(iGrid.x_min, iGrid.y_min, iGrid.z_min);
+        
+        // get he floor number of the (shifted vertex position / the length of a cell in each dimension)
+        unsigned int x_dimension = static_cast<unsigned int>(std::floor(shifted_vertex.x / iGrid.length_x));
+        unsigned int y_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.y / iGrid.length_y));
+        unsigned int z_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.z / iGrid.length_z));
+        
+        // if the vertex is fall on the top / right / far plane of the whole cluster
+        if(x_dimension == iGrid.in_dimension)
+            x_dimension = x_dimension - 1;
+        else if (y_dimension == iGrid.in_dimension)
+            y_dimension = y_dimension - 1;
+        else if (z_dimension == iGrid.in_dimension)
+            z_dimension = z_dimension - 1;
+        
+        cell_id = x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * std::powf((float)iGrid.in_dimension,2.f));
+        
+        return cell_id;
     }
 
     // C table
@@ -477,24 +507,8 @@ namespace MSc
             //loop through the vertices
             for(unsigned int j = 0; j < iVertices.size(); j++)
             {
-                // shift the vertex to the positive half of the axis
-                glm::vec3 shifted_vertex = iVertices[j].position - glm::vec3(iGrid.x_min, iGrid.y_min, iGrid.z_min);
-                
-                // get he floor number of the (shifted vertex position / the length of a cell in each dimension)
-                unsigned int x_dimension = static_cast<unsigned int>(std::floor(shifted_vertex.x / iGrid.length_x));
-                unsigned int y_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.y / iGrid.length_y));
-                unsigned int z_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.z / iGrid.length_z));
-                
-                // if the vertex is fall on the top / right / far plane of the whole cluster
-                if(x_dimension == iGrid.in_dimension)
-                    x_dimension = x_dimension - 1;
-                else if (y_dimension == iGrid.in_dimension)
-                    y_dimension = y_dimension - 1;
-                else if (z_dimension == iGrid.in_dimension)
-                    z_dimension = z_dimension - 1;
-                
                 // convert the x,y,z dimension of the cell to cell id
-                if(iGrid.cells[i].cell_id == (x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * std::powf((float)iGrid.in_dimension,2.f))))
+                if(iGrid.cells[i].cell_id == GetCellid(iVertices[j], iGrid))
                 {
                     vertices_in_cell.emplace_back(vertices[j].vertex_id);
                 }
@@ -540,20 +554,85 @@ namespace MSc
         return weight_of_vertex;
     }
 
-    // R table
-    std::map<int, int> Mesh::CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices)
+    // R table (key is the cell id, value is the vertex id)
+    std::map<unsigned int, unsigned int> Mesh::CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices)
     {
-        std::map<int, int> temp;
+        std::map<unsigned int, unsigned int> temp;
 
+        for(unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            for(unsigned int j = 0; j < iGrid.cells.size(); j++)
+            {
+                // convert the x,y,z dimension of the cell to cell id
+                if(iGrid.cells[j].cell_id == GetCellid(iVertices[i], iGrid))
+                {
+                    temp.insert(std::make_pair(iGrid.cells[j].cell_id, iVertices[i].vertex_id));
+                }
+            }
+        }
         
         return temp;
     }
 
-    std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Mesh::Elimination(std::vector<Face> iFaces, std::map<int, int> iRtable)
+    std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Mesh::Elimination(std::vector<Face> iFaces, std::map<unsigned int, unsigned int> &iRtable, cell_table &iCtable, CellSet &iGrid, std::vector<Vertex> &iVertices)
     {
         std::vector<Face> faces;
         std::vector<Edge> edges;
         std::vector<Vertex> points;
+        
+                // vertex id   // cell id
+        std::map<unsigned int, unsigned int> cell_No_of_vertex;
+        // 1. loop through R table
+        // 2. loop through Faces
+        // 3. if 3 vertex of the triangle in the same cell, eliminate it to a vertex
+                // save it to SP table ( not bound any other triangle )
+           // if 2 vertex of the triangle in the same cell, eliminate it to an edge
+                // save it to SE table ( not bound any other triangle )
+           // if all vertices in different cell, keep the triangle into ST table
+        for(unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            for(unsigned int j = 0; j < iGrid.cells.size(); j++)
+            {
+                if(iGrid.cells[j].cell_id == GetCellid(iVertices[i], iGrid))
+                {
+                    cell_No_of_vertex.insert(std::make_pair(iVertices[i].vertex_id, iGrid.cells[j].cell_id));
+                    break;
+                }
+                else
+                {
+                    
+                }
+            }
+        }
+        
+        for(auto const& face: iFaces)
+        {
+            Edge edge;
+            Vertex vertex;
+            //if two vertices of the face is in the same cell
+            if(cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[1]))
+            {
+                //将这两个点合成一个点，并连接三角形的另一个点
+            }
+            else if(cell_No_of_vertex.find(face.vertices_id[1]) == cell_No_of_vertex.find(face.vertices_id[2]))
+            {
+                
+            }
+            else if(cell_No_of_vertex.find(face.vertices_id[2]) == cell_No_of_vertex.find(face.vertices_id[0]))
+            {
+                
+            }
+            //if all vertices of the face is in the same cell
+            else if(cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[1]) &&             cell_No_of_vertex.find(face.vertices_id[0]) == cell_No_of_vertex.find(face.vertices_id[2]))
+            {
+                //将三角形简化为一个点
+            }
+            //if all vertices are in different cell
+            else
+            {
+                //保留三角形
+            }
+        }
         
         return {points, edges, faces};
     }
@@ -566,12 +645,17 @@ namespace MSc
         iGrid.ConstructAxises(vertices, dimension);
         iGrid.ConstructGrid(dimension, iGrid.cells);
         
-        representative_vertex_of_cell = CalculateRepresentativeVertices(iGrid, vertices);
-        
+        // C table
         vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
         
+        // W table
         weight_of_vertex = CalculateWeight(vertices, edges);
         
+        // SV table + R table
+        simplified_vertices = CalculateSimplifiedVertices(vertices_in_cell, weight_of_vertex, vertices);
+        
+        representative_vertex_of_cell = CalculateRepresentativeVertices(iGrid, simplified_vertices);
+
     }
 
     void Mesh::Terminate(Mesh &iMesh)

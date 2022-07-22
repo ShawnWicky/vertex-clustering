@@ -174,7 +174,7 @@ namespace MSc
         // map key = vertex id, map value = cell id
         // the cell that each vertex falls in
         // R table
-        std::map<int, int> representative_vertex_of_cell;
+        std::map<unsigned int, unsigned int> representative_vertex_of_cell;
         
         // map key = cell id, map value = vertices id
         // vertices that falls in each cell
@@ -206,7 +206,6 @@ namespace MSc
         
         // create edges for the mesh
         std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
-
         
         void AddHalfEdgeToFace(std::vector<HalfEdge> &iHalfEdges);
         
@@ -215,18 +214,21 @@ namespace MSc
         // calculate the weight of each vertex
         std::map<int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
         
-        // fill the r table
-        std::map<int, int> CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices);
-        
         // calculate the simplified vertices(SV) table
-        void CalculateSVtable(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices);
+        std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices);
+        
+        // helper function for r and c to reduce the code redundancy
+        unsigned int GetCellid(Vertex &iVertex, CellSet &cell);
+        
+        // fill the r table
+        std::map<unsigned int, unsigned int> CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices);
         
         // fill the c table
         std::map<unsigned int, std::vector<unsigned int>> CalculateVerticesInCell(std::vector<Vertex> &iVertices, CellSet &iGrid);
         
         // elimination
         // complete the ST/SE/SP table
-        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(std::vector<Face> iFaces, std::map<int, int> iRtable);
+        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(std::vector<Face> iFaces, std::map<unsigned int, unsigned int> &iRtable, cell_table &iCtale, CellSet &iGrid, std::vector<Vertex> &iVertices);
         
         // reduce duplicates for simplifed mesh
         void ReduceDuplicates();
