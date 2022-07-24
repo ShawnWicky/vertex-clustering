@@ -15,7 +15,7 @@ namespace MSc
  
         if(ImGui::Begin("Controller"), outIsOpen)
         {
-            ImGui::InputInt("##dimension", &_grid.in_dimension);
+            ImGui::InputScalar("##dimension", ImGuiDataType_U32, &_grid.in_dimension, nullptr, nullptr, "%u");
             ImGui::SameLine();
             
             if(ImGui::Button("Initialize"))
