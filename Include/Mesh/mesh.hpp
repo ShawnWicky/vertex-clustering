@@ -75,7 +75,8 @@ namespace MSc
         
     private:
         // Compare function for std::sort
-        static bool Compare(Edge e0, Edge e1);
+        friend bool operator == (const Edge& e0, const Edge& e1);
+
     };
 
     class Face
@@ -86,8 +87,11 @@ namespace MSc
         HalfEdge* half_edge_face;
         // vertice in the face
         std::vector<unsigned int> vertices_id;
+        std::vector<unsigned int> normals_id;
+
         // id of face
         unsigned int face_id;
+
     
     };
 
@@ -133,7 +137,7 @@ namespace MSc
         float y_max, y_min;
         float z_max, z_min;
         
-        void ConstructAxises(std::vector<Vertex> &iVertices, int dimension);
+        void ConstructAxises(std::vector<glm::vec3> &iPositions, int dimension);
         
         void ConstructGrid(int in_dimension, std::vector<Cell> &iCells);
         
@@ -199,13 +203,13 @@ namespace MSc
         //----------------------------------
         
         // build vertices table without halfedge(v table)
-        void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals);
+        void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals, std::vector<Face> &faces);
         
         // create half edges for the mesh
         std::vector<HalfEdge> BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices);
         
         // create edges for the mesh
-        std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
+        std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<glm::vec3> &iPositions);
         
         void AddHalfEdgeToFace(std::vector<HalfEdge> &iHalfEdges);
         
@@ -215,7 +219,7 @@ namespace MSc
         std::map<int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
         
         // calculate the simplified vertices(SV) table
-        std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices);
+        std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<glm::vec3> &iPositions);
         
         // helper function for r and c to reduce the code redundancy
         unsigned int GetCellid(Vertex &iVertex, CellSet &cell);
@@ -228,18 +232,16 @@ namespace MSc
         
         // elimination
         // complete the ST/SE/SP table
-        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(  std::vector<Face> iFaces, 
-                                                                                            std::map<unsigned int, unsigned int> &iRtable, /*R table*/
-                                                                                            cell_table &iCtale, /*C table*/
-                                                                                            CellSet &iGrid, /*Grid*/
-                                                                                            std::vector<Vertex> &iVertices /*SV table*/ );
-        
-        // reduce duplicates for simplifed mesh
-        void ReduceDuplicates();
+        std::vector<Face> Elimination(  std::vector<Face> iFaces, 
+                                        std::map<unsigned int, unsigned int> &iRtable, /*R table*/
+                                        CellSet &iGrid, /*Grid*/
+                                        std::vector<Vertex> &iVertices /*SV table*/ );
         
         // calculate the new vertex normal for all vertices from ST table
-        void CalculateVertexNormal(std::vector<Face> iFace);
+        void CalculateVertexNormal(std::vector<Face> iFace, std::vector<glm::vec3>& iPosition);
         
+        std::vector<glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<glm::vec3>& iPosition);
+
         void Initialize(CellSet &iGrid, int dimension);
 
         void Terminate(Mesh &iMesh);
@@ -263,10 +265,7 @@ namespace MSc
         
         //Write obj file
         void ExportObj(std::string fileName);
-        
-        //load indices array for rendering
-        void LoadIndices();
-        
+
         //set up the opengl rendering items
         void SetUp();
         
