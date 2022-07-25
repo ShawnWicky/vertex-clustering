@@ -216,7 +216,7 @@ namespace MSc
         void AddHalfEdgeToVertex(std::vector<HalfEdge> &iHalfEdges);
         
         // calculate the weight of each vertex
-        std::map<int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
+        std::map<int, float> CalculateWeight(std::vector<glm::vec3> &iPositions, std::vector<Edge> &iEdges);
         
         // calculate the simplified vertices(SV) table
         std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<glm::vec3> &iPositions);

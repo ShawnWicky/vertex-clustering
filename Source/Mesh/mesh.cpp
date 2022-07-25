@@ -391,7 +391,7 @@ namespace MSc
     std::vector<Edge> Mesh::BuildEdge(std::vector<Face> &iFaces, std::vector<glm::vec3>& iPositions)
     {
         //the temporary vector of edges that need to be returned
-        std::vector<Edge> temp(3 * iFaces.size());
+        std::vector<Edge> temp;
         
         Edge edge0;
         Edge edge1;
@@ -409,9 +409,9 @@ namespace MSc
             edge2.start_vertex = iFaces[i].vertices_id[2];
             edge2.end_vertex = iFaces[i].vertices_id[0];
             
-            temp[3*i] = edge0;
-            temp[3*i+1] = edge1;
-            temp[3*i+2] = edge2;
+            temp.push_back(edge0);
+            temp.push_back(edge1);
+            temp.push_back(edge2);
         }
 
         // remove duplicates
@@ -560,7 +560,7 @@ namespace MSc
     }
  
     // W table
-    std::map<int, float> Mesh::CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges)
+    std::map<int, float> Mesh::CalculateWeight(std::vector<glm::vec3> &iPositions, std::vector<Edge> &iEdges)
     {
         // 1. loop through the vertices
         // 2. find all edges attached on the vertex
@@ -572,19 +572,19 @@ namespace MSc
         
         std::map<int, float> temp;
         
-        for(unsigned int i = 0; i < iVertices.size(); i++)
+        for(unsigned int i = 0; i < iPositions.size(); i++)
         {
             std::priority_queue<float> length_queue;
             
             for(unsigned int j = 0; j < iEdges.size(); j++)
             {
-                if(iEdges[j].start_vertex == iVertices[i].vertex_id || iEdges[j].end_vertex == iVertices[i].vertex_id)
+                if(iEdges[j].start_vertex == i || iEdges[j].end_vertex == i)
                 {
                     length_queue.push(iEdges[j].length);
                 }
             }
             
-            temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+            temp.insert(std::pair<unsigned int, float>(i, length_queue.top()));
         }
         
         weight_of_vertex = temp;
@@ -661,7 +661,6 @@ namespace MSc
             if(cell_No_of_vertex.at(simp_face.vertices_id[0]) == cell_No_of_vertex.at(simp_face.vertices_id[1]) &&
                cell_No_of_vertex.at(simp_face.vertices_id[0]) == cell_No_of_vertex.at(simp_face.vertices_id[2]))
             {
-            //将三角形简化为一个点
                 vertex.position = iVertices[iRtable.at(cell_No_of_vertex.at(simp_face.vertices_id[0]))].position;
                 vertex.normal = iVertices[iRtable.at(cell_No_of_vertex.at(simp_face.vertices_id[0]))].normal;
                 vertex.half_edge_vertex = nullptr;
@@ -807,7 +806,7 @@ namespace MSc
         vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
         
         // W table
-        weight_of_vertex = CalculateWeight(vertices, edges);
+        weight_of_vertex = CalculateWeight(positions, edges);
         
         // SV table + R table
         simplified_vertices = CalculateSimplifiedVertices(vertices_in_cell, weight_of_vertex, positions);
