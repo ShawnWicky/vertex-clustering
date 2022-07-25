@@ -29,8 +29,17 @@ namespace MSc
         HalfEdge* half_edge_vertex;
         //vertex id
         unsigned int vertex_id;
+
     };
     
+    struct Vertex_Render
+    {
+        //position info
+        glm::vec3 position;
+        //normal info
+        glm::vec3 normal;
+    };
+
     class HalfEdge
     {
     public:
@@ -64,14 +73,12 @@ namespace MSc
         //length of edge
         float length = -1.f;
         
-        //the id of the start vertex and end vertex of the edge
-        unsigned int start_vertex;
-        unsigned int end_vertex;
-        
+        //the pointer of the start vertex and end vertex of the edge
+        Vertex* start_ver;
+        Vertex* end_ver;
         ///--------------------------------------
         /// functions
         ///--------------------------------------
-        bool isBoundary();
         
     private:
         // Compare function for std::sort
@@ -187,19 +194,13 @@ namespace MSc
         // ST table
         std::vector<Face> simplified_triangles;
         
-        // SE table
-        std::vector<Edge> simplified_edges;
-        
-        // SP tab le
-        std::vector<Vertex> simplified_points;
-        
         
         //----------------------------------
         // Functions
         //----------------------------------
-        
+
         // build vertices table without halfedge(v table)
-        void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals);
+        void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals, std::vector<Face>& iFaces);
         
         // create half edges for the mesh
         std::vector<HalfEdge> BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices);
@@ -227,19 +228,21 @@ namespace MSc
         std::map<unsigned int, std::vector<unsigned int>> CalculateVerticesInCell(std::vector<Vertex> &iVertices, CellSet &iGrid);
         
         // elimination
-        // complete the ST/SE/SP table
-        std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Elimination(  std::vector<Face> iFaces, 
-                                                                                            std::map<unsigned int, unsigned int> &iRtable, /*R table*/
-                                                                                            cell_table &iCtale, /*C table*/
-                                                                                            CellSet &iGrid, /*Grid*/
-                                                                                            std::vector<Vertex> &iVertices /*SV table*/ );
+        std::vector<Face> Mesh::Elimination(std::vector<Face> iFaces,
+            std::map<unsigned int, unsigned int>& iRtable,
+            CellSet& iGrid,
+            std::vector<Vertex>& iVertices,
+            std::vector<Vertex>& iVertices_original);
         
         // reduce duplicates for simplifed mesh
         void ReduceDuplicates();
         
         // calculate the new vertex normal for all vertices from ST table
-        void CalculateVertexNormal(std::vector<Face> iFace);
-        
+        void CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
+
+        // calculate the simplified faces' normal
+        std::map<unsigned int, glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
+
         void Initialize(CellSet &iGrid, int dimension);
 
         void Terminate(Mesh &iMesh);
@@ -247,6 +250,8 @@ namespace MSc
         ///OpenGL Section
         ///------------------------------------------------------------
         //opengl stuff
+        std::vector<Vertex_Render> vertices_render;
+
         std::vector<glm::vec3> positions;
         
         std::vector<glm::vec3> normals;
@@ -272,5 +277,4 @@ namespace MSc
         
         void Render(Shader &shader);
     };
-
 }
