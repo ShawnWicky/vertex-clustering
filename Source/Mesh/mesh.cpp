@@ -619,7 +619,7 @@ namespace MSc
         return temp;
     }
 
-    std::vector<Face> Mesh::Elimination(std::vector<Face> iFaces,
+    std::vector<Face> Mesh::Elimination(std::vector<Face> &iFaces,
         std::map<unsigned int, unsigned int>& iRtable,
         CellSet& iGrid,
         std::vector<Vertex>& iVertices,
@@ -756,17 +756,47 @@ namespace MSc
         return faces;
     }
 
-
     void Mesh::CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices)
     {
+        // map of face normals, key is face id, value is face normal
         std::map<unsigned int, glm::vec3> face_normals = CalculateFaceNormal(iFace, iVertices);
-
-        //Get the vertex linked face
-        for (unsigned int i = 0; i < iFace.size(); i++)
+        
+        // key is vertex id, value is faces id that are neighbors of vertex
+        std::map<unsigned int, std::vector<unsigned int>> vertex_faces;
+        
+        //fill the map "vertex_faces"
+        for (unsigned int i = 0; i < iVertices.size(); i++)
         {
-            for (unsigned int j = 0; j < vertices.size(); j++)
+            std::vector<unsigned int> faces_vertex;
+            // for each face
+            for(const auto& face : iFace)
             {
-
+                // for each vertex in face
+                for(unsigned int j = 0; j < face.vertices_id.size(); j++)
+                {
+                    //check if the vertex is in this face
+                    if(iVertices[i].vertex_id == face.vertices_id[j])
+                    {
+                        faces_vertex.push_back(face.face_id);
+                    }
+                }
+            }
+            
+            vertex_faces.insert(std::make_pair(iVertices[i].vertex_id, faces_vertex));
+            
+            faces_vertex.clear();
+        }
+        
+        for(unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            glm::vec3 vertex_normal;
+            
+            for(auto const& vertex: vertex_faces)
+            {
+                for(unsigned int j = 0; j < vertex.second.size(); j++)
+                {
+                    
+                }
             }
         }
     }

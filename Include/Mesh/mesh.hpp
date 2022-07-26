@@ -228,7 +228,7 @@ namespace MSc
         std::map<unsigned int, std::vector<unsigned int>> CalculateVerticesInCell(std::vector<Vertex> &iVertices, CellSet &iGrid);
         
         // elimination
-        std::vector<Face> Mesh::Elimination(std::vector<Face> iFaces,
+        std::vector<Face> Elimination(std::vector<Face> &iFaces,
             std::map<unsigned int, unsigned int>& iRtable,
             CellSet& iGrid,
             std::vector<Vertex>& iVertices,
@@ -236,7 +236,7 @@ namespace MSc
         
         // reduce duplicates for simplifed mesh
         void ReduceDuplicates();
-        
+
         // calculate the new vertex normal for all vertices from ST table
         void CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
 
