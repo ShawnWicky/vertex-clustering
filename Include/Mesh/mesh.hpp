@@ -79,10 +79,6 @@ namespace MSc
         ///--------------------------------------
         /// functions
         ///--------------------------------------
-        
-    private:
-        // Compare function for std::sort
-        static bool Compare(Edge e0, Edge e1);
     };
 
     class Face
@@ -93,6 +89,8 @@ namespace MSc
         HalfEdge* half_edge_face;
         // vertice in the face
         std::vector<unsigned int> vertices_id;
+
+        std::vector<unsigned int> normals_id;
         // id of face
         unsigned int face_id;
     
@@ -155,7 +153,7 @@ namespace MSc
     class Mesh
     {
     public:
-        Mesh(std::string filName);
+        Mesh();
         
         ///------------------------------------------------------------
         ///Vertex Clustering Section
@@ -218,9 +216,6 @@ namespace MSc
         // calculate the simplified vertices(SV) table
         std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices);
         
-        // helper function for r and c to reduce the code redundancy
-        unsigned int GetCellid(Vertex &iVertex, CellSet &cell);
-        
         // fill the r table
         std::map<unsigned int, unsigned int> CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices);
         
@@ -240,15 +235,21 @@ namespace MSc
         // calculate the new vertex normal for all vertices from ST table
         void CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
 
-        // calculate the simplified faces' normal
-        std::map<unsigned int, glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
-
         void Initialize(CellSet &iGrid, int dimension);
 
         void Terminate(Mesh &iMesh);
+
+    private:
+        // calculate the simplified faces' normal
+        std::map<unsigned int, glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
+
+        // helper function for r and c to reduce the code redundancy
+        unsigned int GetCellid(Vertex& iVertex, CellSet& cell);
+
         ///------------------------------------------------------------
         ///OpenGL Section
         ///------------------------------------------------------------
+    public:
         //opengl stuff
         std::vector<Vertex_Render> vertices_render;
 
@@ -268,10 +269,7 @@ namespace MSc
         
         //Write obj file
         void ExportObj(std::string fileName);
-        
-        //load indices array for rendering
-        void LoadIndices();
-        
+
         //set up the opengl rendering items
         void SetUp();
         

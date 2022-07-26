@@ -150,10 +150,8 @@ namespace MSc
 
     // the section for Rendering
     
-    Mesh::Mesh(std::string fileName)
+    Mesh::Mesh()
     {
-        LoadObj(fileName);
-        SetUp();
     };
 
     std::vector<std::string> Mesh::Split(std::string str, char del)
@@ -217,7 +215,8 @@ namespace MSc
                     {
                         std::vector<std::string> sub_token = Split(face_index[i], '/');
                         
-                        face.vertices_id.emplace_back(std::stoi(sub_token[0])-1);
+                        face.vertices_id.emplace_back(std::stoi(sub_token[0]) - 1);
+                        face.normals_id.emplace_back(std::stoi(sub_token[2]) - 1);
                     }
    
                 }
@@ -233,6 +232,9 @@ namespace MSc
         
         //set up the vertices table
         BuildVertices(positions, normals, faces);
+
+        std::cout << "Complete loading" << std::endl;
+
     }
 
     void Mesh::ExportObj(std::string fileName)
@@ -248,17 +250,17 @@ namespace MSc
         
         if(writeFile.is_open())
         {
-            for(unsigned int i = 0; i < positions.size(); i++)
+            for(unsigned int i = 0; i < simplified_vertices.size(); i++)
             {
-                writeFile << "v " << Mesh::positions[i].x << " " << Mesh::positions[i].y << " " << Mesh::positions[i].z << "\n";
+                writeFile << "v " << Mesh::simplified_vertices[i].position.x << " " << Mesh::simplified_vertices[i].position.y << " " << Mesh::simplified_vertices[i].position.z << "\n";
             }
         
-            for(unsigned int i = 0; i < normals.size(); i++)
+            for(unsigned int i = 0; i < simplified_vertices.size(); i++)
             {
-                writeFile << "vn " << Mesh::normals[i].x << " " << Mesh::normals[i].y << " " << Mesh::normals[i].z << "\n";
+                writeFile << "vn " << Mesh::simplified_vertices[i].normal.x << " " << Mesh::simplified_vertices[i].normal.y << " " << Mesh::simplified_vertices[i].normal.z << "\n";
             }
         
-            for(const auto& face: faces)
+            for(const auto& face: simplified_triangles)
             {
                 writeFile << "f ";
                 for(std::uint8_t j = 0; j < face.vertices_id.size(); j++)
@@ -272,39 +274,42 @@ namespace MSc
             writeFile.close();
         }
         
+        std::cout << "Complete Exporting" << std::endl;
     }
 
     void Mesh::BuildVertices(std::vector<glm::vec3> &iPositions, std::vector<glm::vec3> &iNormals, std::vector<Face> &iFaces)
     {
+
+        // used for simplification
         for(unsigned int i = 0; i < iPositions.size(); i++)
         {
             Vertex vertex;
 
             vertex.position = iPositions[i];
-            vertex.normal = iNormals[i];
             vertex.vertex_id = i;
             vertex.half_edge_vertex = nullptr;
             
             vertices.emplace_back(vertex);
         }
 
+        // used for render
         for (unsigned int j = 0; j < iFaces.size(); j++)
         {
             Vertex_Render vertex0;
             vertex0.position = iPositions[iFaces[j].vertices_id[0]];
-            vertex0.normal = iNormals[iFaces[j].vertices_id[0]];
+            vertex0.normal = iNormals[iFaces[j].normals_id[0]];
 
             vertices_render.push_back(vertex0);
 
             Vertex_Render vertex1;
             vertex1.position = iPositions[iFaces[j].vertices_id[1]];
-            vertex1.normal = iNormals[iFaces[j].vertices_id[1]];
+            vertex1.normal = iNormals[iFaces[j].normals_id[1]];
 
             vertices_render.push_back(vertex1);
 
             Vertex_Render vertex2;
             vertex2.position = iPositions[iFaces[j].vertices_id[2]];
-            vertex2.normal = iNormals[iFaces[j].vertices_id[2]];
+            vertex2.normal = iNormals[iFaces[j].normals_id[2]];
 
             vertices_render.push_back(vertex2);
         }
@@ -783,22 +788,28 @@ namespace MSc
             }
             
             vertex_faces.insert(std::make_pair(iVertices[i].vertex_id, faces_vertex));
-            
-            faces_vertex.clear();
         }
         
-        for(unsigned int i = 0; i < iVertices.size(); i++)
+ 
+            // for each face attached on the vertex
+        for(auto const& vertex: vertex_faces)
         {
-            glm::vec3 vertex_normal;
-            
-            for(auto const& vertex: vertex_faces)
+            glm::vec3 vertex_normal = glm::vec3(0.f, 0.f, 0.f);
+            // add all face normals to the vertex_normal
+            for(unsigned int j = 0; j < vertex.second.size(); j++)
             {
-                for(unsigned int j = 0; j < vertex.second.size(); j++)
-                {
-                    
-                }
+                vertex_normal = vertex_normal + face_normals.at(vertex.second[j]);
             }
+
+            // get the average face normal
+            vertex_normal = glm::vec3(vertex_normal.x / vertex.second.size(), vertex_normal.y / vertex.second.size(), vertex_normal.z / vertex.second.size());
+            
+            // normalize the average of sum of face normals to get the final vertex normal
+            iVertices[vertex.first].normal = glm::normalize(vertex_normal);
         }
+
+        face_normals.clear();
+        vertex_faces.clear();
     }
 
     std::map<unsigned int, glm::vec3> Mesh::CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices)
@@ -839,6 +850,9 @@ namespace MSc
 
         simplified_triangles = Elimination(faces, representative_vertex_of_cell, iGrid, simplified_vertices, vertices);
 
+        CalculateVertexNormal(simplified_triangles, simplified_vertices);
+
+        std::cout << "Complete" << std::endl;
     }
 
     void Mesh::Terminate(Mesh &iMesh)

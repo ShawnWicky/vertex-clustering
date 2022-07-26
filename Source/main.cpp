@@ -161,10 +161,10 @@ int main(int argc, const char * argv[])
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
-        Mesh mesh("../../assets/test.obj");
+        Mesh mesh;
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-        Mesh mesh("./assets/test.obj");
+        Mesh mesh;
     
 #endif
         CellSet grid;

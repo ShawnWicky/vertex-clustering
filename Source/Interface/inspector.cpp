@@ -10,11 +10,27 @@ namespace MSc
     
     void Inspector::ShowGuiWindow(bool* outIsOpen)
     {
-
+        static char loadBuf[64] = "";
         static char exportBuf[64] = "";
  
         if(ImGui::Begin("Controller"), outIsOpen)
         {
+            ImGui::InputText("##load", loadBuf, 64);
+            ImGui::SameLine();
+            if (ImGui::Button("Load File"))
+            {
+
+#ifdef __APPLE__
+                _mesh.ExportObj("../../assets/" + std::string(loadBuf));
+#else
+                _mesh.LoadObj("./assets/" + std::string(loadBuf));
+#endif  
+                _mesh.SetUp();
+            }
+
+            ImGui::Separator();
+
+
             ImGui::InputScalar("##dimension", ImGuiDataType_U32, &_grid.in_dimension, nullptr, nullptr, "%u");
             ImGui::SameLine();
             
@@ -22,18 +38,18 @@ namespace MSc
             {
                 _mesh.Initialize(_grid, _grid.in_dimension);
             }
-            
+
             ImGui::Separator();
             
             ImGui::InputText("##export", exportBuf, 64);
             ImGui::SameLine();
             if(ImGui::Button("Export File"))
             {
-            #ifdef __APPLE__
+#ifdef __APPLE__
                 _mesh.ExportObj("../../assets/" + std::string(exportBuf));
-            #else
+#else
                 _mesh.ExportObj("./assets/" + std::string(exportBuf));
-            #endif
+#endif
             }
 
             ImGui::End();
