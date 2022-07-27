@@ -4,14 +4,14 @@
 #include <utility>
 #include <queue>
 #include <algorithm>
-#include <unordered_map>
 #include <stdlib.h>
 
 #include <Mesh/mesh.hpp>
 
 #include <glad/glad.h>
-#include <glm/gtx/string_cast.hpp>
 
+#include <glm/gtx/string_cast.hpp> // for debug
+#include <glm/gtx/vector_angle.hpp>
 namespace MSc
 {
     ///-------------------------------------------------
@@ -567,7 +567,7 @@ namespace MSc
     }
  
     // W table
-    std::map<int, float> Mesh::CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges)
+    std::map<unsigned int, float> Mesh::CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges)
     {
         // 1. loop through the vertices
         // 2. find all edges attached on the vertex
@@ -577,26 +577,79 @@ namespace MSc
         
         // get the length of edges
         
-        std::map<int, float> temp;
+        std::map<unsigned int, float> temp;
         
-        for(unsigned int i = 0; i < iVertices.size(); i++)
+        
+        if(!curvature_area)
         {
-            std::priority_queue<float> length_queue;
-            
-            for(unsigned int j = 0; j < iEdges.size(); j++)
+            for(unsigned int i = 0; i < iVertices.size(); i++)
             {
-                if(iEdges[j].start_ver == &iVertices[i] || iEdges[j].end_ver == &iVertices[i])
-                {
-                    length_queue.push(iEdges[j].length);
-                }
-            }
+                std::priority_queue<float> length_queue;
             
-            temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+                for(unsigned int j = 0; j < iEdges.size(); j++)
+                {
+                    if(iEdges[j].start_ver == &iVertices[i] || iEdges[j].end_ver == &iVertices[i])
+                    {
+                        length_queue.push(iEdges[j].length);
+                    }
+                }
+            
+                temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+            }
         }
         
-        weight_of_vertex = temp;
+        else if(curvature_area)
+        {
+            std::map<Vertex*, std::vector<Edge*>> edges_on_vertex;
+            
+            std::vector<Edge*> edges_ver;
+            
+            for(unsigned int i = 0; i < iVertices.size(); i++)
+            {
+                for(unsigned int j = 0; j < iEdges.size(); j++)
+                {
+                    if(iVertices[i].vertex_id == iEdges[j].end_ver->vertex_id ||
+                       iVertices[i].vertex_id == iEdges[j].start_ver->vertex_id)
+                    {
+                        edges_ver.push_back(&iEdges[j]);
+                    }
+                }
+                
+                edges_on_vertex.insert(std::make_pair(&iVertices[i], edges_ver));
+            }
+            
+            for(unsigned int i = 0; i < iVertices.size(); i++)
+            {
+                float angle = 0.f;
+                
+                std::vector<float> edges_angle;
+                
+                for(auto const& one_edge : edges_on_vertex)
+                {
+                    
+                    if(one_edge.first->vertex_id == iVertices[i].vertex_id)
+                    {
+                        glm::vec3 vertex_normal = iVertices[i].normal;
+                        
+                        for(auto const& incident_edge : one_edge.second)
+                        {
+                            glm::vec3 incident = incident_edge->start_ver->position - incident_edge->end_ver->position;
+                            
+                            float angle = 1 / glm::angle(vertex_normal, incident);
+                            
+                            edges_angle.push_back(angle);
+                        }
+                    }
+                    
+                }
+                
+                std::sort(edges_angle.begin(), edges_angle.end());
+                
+                temp.insert(std::make_pair(iVertices[i].vertex_id, edges_angle[0]));
+            }
+        }
         
-        return weight_of_vertex;
+        return temp;
     }
 
     // R table (key is the cell id, value is the vertex id)
@@ -635,27 +688,28 @@ namespace MSc
 
                    // vertex id   // cell id
         std::map<unsigned int, unsigned int> cell_No_of_vertex; // the map of original vertex and cell id
-        // 1. loop through R table
-        // 2. loop through Faces
-        // 3. if 3 vertex of the triangle in the same cell, eliminate it to a vertex
-                // save it to SP table ( not bound any other triangle )
-           // if 2 vertex of the triangle in the same cell, eliminate it to an edge
-                // save it to SE table ( not bound any other triangle )
-           // if all vertices in different cell, keep the triangle into ST table
+
+        // loop through all the original vertices
         for (unsigned int i = 0; i < iVertices_original.size(); i++)
         {
+            // the skipper helps get out of the internal loop 
+            // to make the program faster
+            // because the vertex can only falls into a single cell 
+            // so this "skipper" can be used
             bool skipper = false;
 
             for (unsigned int j = 0; !skipper && j < iGrid.cells.size(); j++)
             {
                 if (iGrid.cells[j].cell_id == GetCellid(iVertices_original[i], iGrid))
                 {
+                    // fill the map of original vertex id and its coressponding cell id
                     cell_No_of_vertex.insert(std::make_pair(iVertices_original[i].vertex_id, iGrid.cells[j].cell_id));
                     skipper = true;
                 }
             }
         }
 
+        // for each face
         for (auto const& face : iFaces)
         {
             Edge edge;
@@ -669,6 +723,9 @@ namespace MSc
             //if two vertices of the face is in the same cell
             else if (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]))
             {
+                // cell_No_of_vertex.at --> get the cell id of the original vertex falls in
+                // iRtable.at --> get the representative vertex id of the current cell get from cell_No_of_vertex.at 
+                // iVertices[] --> get the simplified vertex from its id                                   
                 edge.start_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))];
                 edge.end_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))];
 
@@ -705,15 +762,19 @@ namespace MSc
         // check if the triangles are the same and delete duplicate faces
         for (unsigned int i = 0; i < faces.size(); i++)
         {
+            // vector of vertices id of first face
             std::vector<unsigned int> temp_face_vertices(faces[i].vertices_id);
 
             for (unsigned int j = 0; j < faces.size(); j++)
             {
+                // vector of vertices id of second face
                 std::vector<unsigned int> temp_other_facevertices(faces[j].vertices_id);
 
+                // sort two vectors
                 std::sort(temp_face_vertices.begin(), temp_face_vertices.end());
                 std::sort(temp_other_facevertices.begin(), temp_other_facevertices.end());
 
+                // if two vectors are equal erase one face
                 if (temp_face_vertices == temp_other_facevertices)
                 {
                     faces.erase(faces.begin() + j);

@@ -145,7 +145,7 @@ namespace MSc
     };
 
     //used for easily represent weight
-    typedef std::map<int, float> weight_table;
+    typedef std::map<unsigned int, float> weight_table;
 
     //used for easily represent the data structure of C table (vertices in each cell)
     typedef std::map<unsigned int, std::vector<unsigned int>> cell_table;
@@ -174,7 +174,7 @@ namespace MSc
         
         // map key = vertex id, map value = weight of the vertex
         // W table
-        std::map<int, float> weight_of_vertex;
+        std::map<unsigned int, float> weight_of_vertex;
         
         // map key = cell id, map value = vertex id
         // the cell that each vertex falls in
@@ -210,8 +210,9 @@ namespace MSc
         
         void AddHalfEdgeToVertex(std::vector<HalfEdge> &iHalfEdges);
         
-        // calculate the weight of each vertex
-        std::map<int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
+        // calculate the weight of each vertex;
+        // fill the w table
+        std::map<unsigned int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
         
         // calculate the simplified vertices(SV) table
         std::vector<Vertex> CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices);
@@ -228,18 +229,27 @@ namespace MSc
             CellSet& iGrid,
             std::vector<Vertex>& iVertices,
             std::vector<Vertex>& iVertices_original);
-        
-        // reduce duplicates for simplifed mesh
-        void ReduceDuplicates();
 
         // calculate the new vertex normal for all vertices from ST table
         void CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
-
+        
         void Initialize(CellSet &iGrid, int dimension);
 
         void Terminate(Mesh &iMesh);
 
+        bool GetBool()
+        {
+            return curvature_area;
+        }
+        
+        void SetBool(bool input)
+        {
+            curvature_area = input;
+        }
     private:
+        
+        bool curvature_area = false;
+        
         // calculate the simplified faces' normal
         std::map<unsigned int, glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
 
