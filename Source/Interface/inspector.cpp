@@ -22,7 +22,7 @@ namespace MSc
             {
 
 #ifdef __APPLE__
-                _mesh.ExportObj("../../assets/" + std::string(loadBuf));
+                _mesh.LoadObj("../../assets/" + std::string(loadBuf));
 #else
                 _mesh.LoadObj("./assets/" + std::string(loadBuf));
 #endif  

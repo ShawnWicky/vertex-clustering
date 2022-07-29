@@ -717,10 +717,10 @@ namespace MSc
             Edge edge;
             Face simp_face;
             //if all vertices of the face is in the same cell
-            if (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]) &&
-                cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[2]))
+            if ((cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1])) &&
+                (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[2])))
             {
-
+                continue;
             }
             //if two vertices of the face is in the same cell
             else if (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]))
@@ -749,7 +749,9 @@ namespace MSc
             }
 
             //if all vertices are in different cell
-            else
+            else if((cell_No_of_vertex.at(face.vertices_id[2]) != cell_No_of_vertex.at(face.vertices_id[0])) &&
+                    (cell_No_of_vertex.at(face.vertices_id[1]) != cell_No_of_vertex.at(face.vertices_id[0])) &&
+                    (cell_No_of_vertex.at(face.vertices_id[2]) != cell_No_of_vertex.at(face.vertices_id[1])))
             {
                 simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id);
                 simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id);
@@ -767,7 +769,7 @@ namespace MSc
             // vector of vertices id of first face
             std::vector<unsigned int> temp_face_vertices(faces[i].vertices_id);
 
-            for (unsigned int j = 0; j < faces.size(); j++)
+            for (unsigned int j = i+1; j < faces.size(); j++)
             {
                 // vector of vertices id of second face
                 std::vector<unsigned int> temp_other_facevertices(faces[j].vertices_id);
