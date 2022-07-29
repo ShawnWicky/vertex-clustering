@@ -131,6 +131,7 @@ namespace MSc
         // 2. set the boundary to the minX->maxX, minY->maxY, minZ->maxZ
         // 3. loop through the cells to add cells to the grid
          Cell cell;
+      //   #pragma omp parallel for num_threads(4) collapse(3)
          for(unsigned int i = 0; i < in_dimension; i++ ) //(z dimension)
              for(unsigned int j = 0; j < in_dimension; j++ ) //(y dimension)
                  for(unsigned int m = 0; m < in_dimension; m++ ) //(x dimension)
@@ -419,6 +420,7 @@ namespace MSc
         }
 
         // remove duplicates
+
         for(unsigned int i = 0; i < temp.size(); i++)
         {
             // set a bool parameter to check if find the duplicates
@@ -892,12 +894,19 @@ namespace MSc
 
     void Mesh::Initialize(CellSet &iGrid, int dimension)
     {
+        clock_t start, end;
+
         edges = BuildEdge(faces, vertices);
         half_edges = BuildHalfEdge(faces, edges, vertices);
         
+        start = clock();
         iGrid.ConstructAxises(vertices, dimension);
         iGrid.ConstructGrid(dimension, iGrid.cells);
-        
+        end = clock();
+
+        double time = double(end - start) / double(CLOCKS_PER_SEC);
+
+        std::cout << "Complete Grid with time: " << time << std::endl;
         // C table
         vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
         
