@@ -52,6 +52,7 @@ namespace MSc
             
             ImGui::InputText("##export", exportBuf, 64);
             ImGui::SameLine();
+            
             if(ImGui::Button("Export File"))
             {
 #ifdef __APPLE__
@@ -61,7 +62,35 @@ namespace MSc
 #endif
             }
 
+            ImGui::Separator();
+            
+            if(ImGui::Button("Terminate"))
+            {
+                Terminate(_mesh, _grid);
+            }
+               
             ImGui::End();
         }
+    }
+
+    void Inspector::Terminate(Mesh &iMesh, CellSet &iGrid)
+    {  
+        //Simplification parameters
+        iMesh.vertices.clear();
+        iMesh.edges.clear();
+        iMesh.faces.clear();
+        iMesh.weight_of_vertex.clear();
+        iMesh.representative_vertex_of_cell.clear();
+        iMesh.vertices_in_cell.clear();
+        iMesh.simplified_vertices.clear();
+        iMesh.simplified_triangles.clear();
+
+        //OpenGL parmeters
+        iMesh.positions.clear();
+        iMesh.normals.clear();
+        iMesh.indices.clear();
+        iMesh.vertices_render.clear();
+        
+        iGrid.cells.clear();
     }
 }

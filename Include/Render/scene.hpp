@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <Render/shader.hpp>
+#include <Mesh/mesh.hpp>
 
 namespace MSc
 {

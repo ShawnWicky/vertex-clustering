@@ -15,5 +15,7 @@ namespace MSc
     private:
         Mesh &_mesh;
         CellSet &_grid;
+        
+        void Terminate(Mesh &iMesh, CellSet &iGrid);
     };
 }

@@ -21,33 +21,13 @@ namespace MSc
     {
        
     }
-
-    ///-------------------------------------------------
-    /// HalfEdge Section
-    ///-------------------------------------------------
-    HalfEdge::HalfEdge()
-    {
-
-    }
-
-    bool HalfEdge::MakeAdjacent(HalfEdge* in, HalfEdge* out)
-    {
-        // already adjacent
-        if(in->next == out)
-        {
-            return true;
-        }
-        
-        return true;
-    }
-
     
     ///-------------------------------------------------
     /// Edge Section
     ///-------------------------------------------------
     Edge::Edge()
     {
-        this->half_edge_edge = nullptr;
+
     }
 
     ///-------------------------------------------------
@@ -65,7 +45,6 @@ namespace MSc
     {
         this->left_bottom_near_point = glm::vec3(0.f,0.f,0.f);
         this->cell_id = -1;
-        this->number_of_vertices = 0;
     }
 
     ///-------------------------------------------------
@@ -221,7 +200,6 @@ namespace MSc
                     }
    
                 }
-                face.half_edge_face = nullptr;
                 
                 faces.emplace_back(face);
                 
@@ -288,7 +266,6 @@ namespace MSc
 
             vertex.position = iPositions[i];
             vertex.vertex_id = i;
-            vertex.half_edge_vertex = nullptr;
             
             vertices.emplace_back(vertex);
         }
@@ -354,44 +331,41 @@ namespace MSc
         glBindVertexArray(0);
     }
 
+    void Mesh::RenderSimplified(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
+    {
+        vertices_render.clear();
+        indices.clear();
+        
+        for (unsigned int j = 0; j < iFaces.size(); j++)
+        {
+            Vertex_Render vertex0;
+            vertex0.position = iVertices[iFaces[j].vertices_id[0]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[0]].normal;
 
+            vertices_render.push_back(vertex0);
 
+            Vertex_Render vertex1;
+            vertex0.position = iVertices[iFaces[j].vertices_id[1]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[1]].normal;
+            
+            vertices_render.push_back(vertex1);
+
+            Vertex_Render vertex2;
+            vertex0.position = iVertices[iFaces[j].vertices_id[2]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[2]].normal;
+            
+            vertices_render.push_back(vertex2);
+        }
+
+        //set up the indices list
+
+        for (int i = 0; i < vertices_render.size(); i++)
+        {
+            indices.emplace_back(i);
+        }
+    }
 
     // The section for Simplification
-
-    std::vector<HalfEdge> Mesh::BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices)
-    {
-        std::vector<HalfEdge> temp;
-        
-        Edge edge;
-        HalfEdge half_edge;
-        // 1. Loop the faces
-        for ( int i = 0; i < iFaces.size(); i++)
-        {
-            unsigned int counter = 0;
-            // 2. For each face add half edges to the temp vector
-            for( int j = 0; j < 3; j++ )
-            {
-                if( j + 1 > 2)
-                {
-                    half_edge.end_vertex = &iVertices[iFaces[i].vertices_id[j-2]];
-                    half_edge.face = &iFaces[i];
-                    half_edge.half_edge_id = 3 * iFaces[i].face_id + counter;
-                }
-                else
-                {
-                    half_edge.end_vertex = &iVertices[iFaces[i].vertices_id[j+1]];
-                    half_edge.face = &iFaces[i];
-                    half_edge.half_edge_id = 3 * iFaces[i].face_id + counter;
-                }
-                temp.emplace_back(half_edge);
-            }
-        }
-        
-        // 3.
-        
-        return temp;
-    }
 
     std::vector<Edge> Mesh::BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
     {
@@ -478,7 +452,6 @@ namespace MSc
                 vertex.position = iVertices[cell.second[0]].position;
                 vertex.normal = glm::vec3(0.f, 0.f, 0.f);
                 vertex.vertex_id = new_vertex_id;
-                vertex.half_edge_vertex = nullptr;
                 
                 temp.emplace_back(vertex);
                 
@@ -502,7 +475,6 @@ namespace MSc
                 
                 vertex.position = temp_pos;
                 vertex.vertex_id = new_vertex_id;
-                vertex.half_edge_vertex = nullptr;
                 
                 temp.emplace_back(vertex);
                 
@@ -756,7 +728,6 @@ namespace MSc
                 simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id);
                 simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id);
                 simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))].vertex_id);
-                simp_face.half_edge_face = nullptr;
                 simp_face.face_id = 0;
 
                 faces.emplace_back(simp_face);
@@ -764,7 +735,7 @@ namespace MSc
         }
 
         // check if the triangles are the same and delete duplicate faces
-        for (unsigned int i = 0; i < faces.size(); i++)
+        for (std::uint64_t i = 0; i < faces.size(); i++)
         {
             // vector of vertices id of first face
             std::vector<unsigned int> temp_face_vertices(faces[i].vertices_id);
@@ -786,6 +757,19 @@ namespace MSc
             }
         }
 
+        // check if the edges are the same and delete duplicate edges
+        for (std::uint64_t i = 0; i < edges.size(); i++)
+        {
+            for(std::uint64_t j = i; j < edges.size(); j++)
+            {
+                if((edges[i].end_ver == edges[j].start_ver && edges[i].start_ver == edges[j].end_ver) ||
+                   (edges[i].start_ver == edges[j].start_ver && edges[i].end_ver == edges[j].end_ver))
+                {
+                    edges.erase(edges.begin()+j);
+                }
+            }
+        }
+        
         // check if the edge is on the boundary or inside simplified triangles
         // and delete the edges inside the trinagles
         for (unsigned int i = 0; i < edges.size(); i++)
@@ -899,7 +883,6 @@ namespace MSc
         clock_t start, end;
 
         edges = BuildEdge(faces, vertices);
-        half_edges = BuildHalfEdge(faces, edges, vertices);
         
         start = clock();
         iGrid.ConstructAxises(vertices, dimension);
@@ -924,25 +907,9 @@ namespace MSc
 
         CalculateVertexNormal(simplified_triangles, simplified_vertices);
 
+   //     RenderSimplified(simplified_triangles, simplified_vertices);
+        
         std::cout << "Complete" << std::endl;
     }
 
-    void Mesh::Terminate(Mesh &iMesh)
-    {
-        //Simplification parameters
-        iMesh.vertices.clear();
-        iMesh.edges.clear();
-        iMesh.half_edges.clear();
-        iMesh.faces.clear();
-        iMesh.weight_of_vertex.clear();
-        iMesh.representative_vertex_of_cell.clear();
-        iMesh.vertices_in_cell.clear();
-        iMesh.simplified_vertices.clear();
-        iMesh.simplified_triangles.clear();
-
-        //OpenGL parmeters
-        iMesh.positions.clear();
-        iMesh.normals.clear();
-        iMesh.indices.clear();
-    }
 }

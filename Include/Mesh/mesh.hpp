@@ -25,8 +25,6 @@ namespace MSc
         glm::vec3 position;
         //normal info
         glm::vec3 normal;
-        //the pointer of the half edge that start from the current vertex
-        HalfEdge* half_edge_vertex;
         //vertex id
         unsigned int vertex_id;
 
@@ -40,53 +38,26 @@ namespace MSc
         glm::vec3 normal;
     };
 
-    class HalfEdge
-    {
-    public:
-        HalfEdge();
-        // the vertex at the end of the half edge ( the vertex that half edge point to)
-        Vertex* end_vertex;
-        // the id of the half edge
-        unsigned int half_edge_id;
-        // id of the other pair(opposite) of the half edge
-        HalfEdge* pair;
-        // the face that current half edge belong to
-        Face* face;
-        // the next half edge of current half edge
-        HalfEdge* next;
-        // the previous half edge of current half edge
-        HalfEdge* prev;
-        
-        bool MakeAdjacent(HalfEdge* in, HalfEdge* out);
-    };
-
     class Edge
     {
     public:
         
         //Constructor
         Edge();
-        
-        // one of the half edge of the whole edge;
-        HalfEdge* half_edge_edge;
-        
+                
         //length of edge
         float length = -1.f;
         
         //the pointer of the start vertex and end vertex of the edge
         Vertex* start_ver;
         Vertex* end_ver;
-        ///--------------------------------------
-        /// functions
-        ///--------------------------------------
     };
 
     class Face
     {
     public:
         Face();
-        // one of the half edge in the face
-        HalfEdge* half_edge_face;
+
         // vertice in the face
         std::vector<unsigned int> vertices_id;
 
@@ -108,10 +79,6 @@ namespace MSc
     
         //the id of Cell
         unsigned int cell_id;
-        
-        //vertex count
-        unsigned int number_of_vertices;
-        
     };
 
     class CellSet
@@ -167,8 +134,6 @@ namespace MSc
         std::vector<Vertex> vertices;
         //edge info
         std::vector<Edge> edges;
-        //half edge info
-        std::vector<HalfEdge> half_edges;
         //face info
         std::vector<Face> faces;
         
@@ -196,19 +161,27 @@ namespace MSc
         //----------------------------------
         // Functions
         //----------------------------------
+   
+        void Initialize(CellSet &iGrid, int dimension);
 
+        bool GetBool()
+        {
+            return curvature_area;
+        }
+        
+        void SetBool(bool input)
+        {
+            curvature_area = input;
+        }
+    private:
+        
+        bool curvature_area = false;
+        
         // build vertices table without halfedge(v table)
         void BuildVertices(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals, std::vector<Face>& iFaces);
-        
-        // create half edges for the mesh
-        std::vector<HalfEdge> BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Edge> &iEdges, std::vector<Vertex> &iVertices);
-        
+    
         // create edges for the mesh
         std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
-        
-        void AddHalfEdgeToFace(std::vector<HalfEdge> &iHalfEdges);
-        
-        void AddHalfEdgeToVertex(std::vector<HalfEdge> &iHalfEdges);
         
         // calculate the weight of each vertex;
         // fill the w table
@@ -232,23 +205,7 @@ namespace MSc
 
         // calculate the new vertex normal for all vertices from ST table
         void CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
-        
-        void Initialize(CellSet &iGrid, int dimension);
-
-        void Terminate(Mesh &iMesh);
-
-        bool GetBool()
-        {
-            return curvature_area;
-        }
-        
-        void SetBool(bool input)
-        {
-            curvature_area = input;
-        }
-    private:
-        
-        bool curvature_area = false;
+ 
         
         // calculate the simplified faces' normal
         std::map<unsigned int, glm::vec3> CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices);
@@ -284,5 +241,7 @@ namespace MSc
         void SetUp();
         
         void Render(Shader &shader);
+        
+        void RenderSimplified(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
     };
 }
