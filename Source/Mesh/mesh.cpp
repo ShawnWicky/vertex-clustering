@@ -212,8 +212,8 @@ namespace MSc
         //set up the vertices table
         BuildVertices(positions, normals, faces);
 
-        std::cout << "Complete loading" << std::endl;
-
+        std::cout << "vertices: " << vertices.size() << std::endl;
+        std::cout << "faces: " << faces.size() << std::endl;
     }
 
     void Mesh::ExportObj(std::string fileName)
@@ -567,8 +567,10 @@ namespace MSc
                         length_queue.push(iEdges[j].length);
                     }
                 }
-            
-                temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+                if(length_queue.size() != 0)
+                    temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+                else
+                    temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, 0.f));
             }
         }
         
