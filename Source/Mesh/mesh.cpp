@@ -883,20 +883,18 @@ namespace MSc
     void Mesh::Initialize(CellSet &iGrid, int dimension)
     {
         clock_t start, end;
+        double time;
 
-        edges = BuildEdge(faces, vertices);
-        
         start = clock();
+        edges = BuildEdge(faces, vertices);
+
         iGrid.ConstructAxises(vertices, dimension);
         iGrid.ConstructGrid(dimension, iGrid.cells);
-        end = clock();
+      
 
-        double time = double(end - start) / double(CLOCKS_PER_SEC);
-
-        std::cout << "Complete Grid with time: " << time << std::endl;
         // C table
         vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
-        
+
         // W table
         weight_of_vertex = CalculateWeight(vertices, edges);
         
@@ -910,8 +908,11 @@ namespace MSc
         CalculateVertexNormal(simplified_triangles, simplified_vertices);
 
    //     RenderSimplified(simplified_triangles, simplified_vertices);
-        
-        std::cout << "Complete" << std::endl;
+        end = clock();
+
+        time = double(end - start) / double(CLOCKS_PER_SEC);
+
+        std::cout << "Complete Simplification with time: " << time << std::endl;
     }
 
 }
