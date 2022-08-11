@@ -331,6 +331,7 @@ namespace MSc
         glBindVertexArray(0);
     }
 
+    /*
     void Mesh::RenderSimplified(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
     {
         vertices_render.clear();
@@ -364,7 +365,7 @@ namespace MSc
             indices.emplace_back(i);
         }
     }
-
+    */
     // The section for Simplification
 
     std::vector<Edge> Mesh::BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
@@ -886,28 +887,38 @@ namespace MSc
         double time;
 
         start = clock();
+        /// ------------------------------
+        /// Grading
+        /// ------------------------------
+        // W table
         edges = BuildEdge(faces, vertices);
 
+        weight_of_vertex = CalculateWeight(vertices, edges);
+
+        /// ------------------------------
+        /// Clustering
+        /// ------------------------------
+        // C table
         iGrid.ConstructAxises(vertices, dimension);
         iGrid.ConstructGrid(dimension, iGrid.cells);
-      
 
-        // C table
         vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
 
-        // W table
-        weight_of_vertex = CalculateWeight(vertices, edges);
-        
-        // SV table + R table
+        /// ------------------------------
+        /// Synthesis
+        /// ------------------------------
+        // SV table + R table + ST table
         simplified_vertices = CalculateSimplifiedVertices(vertices_in_cell, weight_of_vertex, vertices);
         
         representative_vertex_of_cell = CalculateRepresentativeVertices(iGrid, simplified_vertices);
 
         simplified_triangles = Elimination(faces, representative_vertex_of_cell, iGrid, simplified_vertices, vertices);
 
+        /// ------------------------------
+        /// ReNormal
+        /// ------------------------------
         CalculateVertexNormal(simplified_triangles, simplified_vertices);
 
-   //     RenderSimplified(simplified_triangles, simplified_vertices);
         end = clock();
 
         time = double(end - start) / double(CLOCKS_PER_SEC);
