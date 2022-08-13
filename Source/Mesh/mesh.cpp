@@ -31,6 +31,18 @@ namespace MSc
     }
 
     ///-------------------------------------------------
+    /// Half Edge Section
+    ///-------------------------------------------------
+    HalfEdge::HalfEdge()
+    {
+        this->end_vertex = nullptr;
+        this->face_of_edge = nullptr;
+        this->next_edge = nullptr;
+        this->pair_edge = nullptr;
+        this->prev_edge = nullptr;
+    }
+
+    ///-------------------------------------------------
     /// Face Section
     ///-------------------------------------------------
     Face::Face()
@@ -430,6 +442,41 @@ namespace MSc
         return temp;
     }
 
+    std::vector<HalfEdge> Mesh::BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
+    {
+        std::vector<HalfEdge> temp(3*iFaces.size());
+        
+        for(unsigned int i = 0; i < iFaces.size(); i++)
+        {
+            temp[3*i].end_vertex = &iVertices[iFaces[i].vertices_id[1]];
+            temp[3*i].face_of_edge = &iFaces[i];
+            temp[3*i].prev_edge = &temp[3*i+2];
+            temp[3*i].next_edge = &temp[3*i+1];
+            
+            temp[3*i+1].end_vertex = &iVertices[iFaces[i].vertices_id[2]];
+            temp[3*i+1].face_of_edge = &iFaces[i];
+            temp[3*i+1].prev_edge = &temp[3*i];
+            temp[3*i+1].next_edge = &temp[3*i+1];
+            
+            temp[3*i+2].end_vertex = &iVertices[iFaces[i].vertices_id[0]];
+            temp[3*i+2].face_of_edge = &iFaces[i];
+            temp[3*i+2].prev_edge = &temp[3*i+1];
+            temp[3*i+2].next_edge = &temp[3*i];
+        }
+        
+        for(unsigned int i = 0; i < temp.size(); i++)
+        {
+            for(unsigned int j = i+1; j < temp.size(); j++)
+            {
+                if(temp[i].end_vertex == temp[j].prev_edge->end_vertex && temp[i].prev_edge->end_vertex == temp[j].end_vertex)
+                {
+                    temp[i].pair_edge = &temp[j];
+                    temp[j].pair_edge = &temp[i];
+                }
+            }
+        }
+        return temp;
+    }
 
     //cell_table -> std::map<int, std::vector<unsigned int>>
     //weight_table -> std::map<int, float>
@@ -763,7 +810,7 @@ namespace MSc
         // check if the edges are the same and delete duplicate edges
         for (std::uint64_t i = 0; i < edges.size(); i++)
         {
-            for(std::uint64_t j = i; j < edges.size(); j++)
+            for(std::uint64_t j = i+1; j < edges.size(); j++)
             {
                 if((edges[i].end_ver == edges[j].start_ver && edges[i].start_ver == edges[j].end_ver) ||
                    (edges[i].start_ver == edges[j].start_ver && edges[i].end_ver == edges[j].end_ver))

@@ -15,6 +15,7 @@ namespace MSc
     class HalfEdge;
     class Edge;
     class Face;
+    class HalfEdge;
 
     class Vertex
     {
@@ -51,6 +52,21 @@ namespace MSc
         //the pointer of the start vertex and end vertex of the edge
         Vertex* start_ver;
         Vertex* end_ver;
+    };
+
+    class HalfEdge
+    {
+    public:
+        HalfEdge();
+        
+        // the vertex that edge point to
+        Vertex* end_vertex;
+        
+        HalfEdge* prev_edge;
+        HalfEdge* next_edge;
+        HalfEdge* pair_edge;
+        
+        Face* face_of_edge;
     };
 
     class Face
@@ -183,6 +199,8 @@ namespace MSc
         // create edges for the mesh
         std::vector<Edge> BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
         
+        // create half edge for the mesh
+        std::vector<HalfEdge> BuildHalfEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices);
         // calculate the weight of each vertex;
         // fill the w table
         std::map<unsigned int, float> CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges);
