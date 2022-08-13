@@ -25,3 +25,14 @@ windows:
 ./premake5 vs2022
 
 premake5.exe: this is windows premake5 Mono profile output, size(1.4mb)
+
+
+How to use:
+
+1. Load the file by enter the file name in assets folder
+
+2. enter the dimension you want in the text box at the left of initialize button and click the initialize button
+
+3. After the initialize done, export the file with the file name you like
+
+4. Click terminate and load the file you just export to see the result
