@@ -738,7 +738,7 @@ namespace MSc
         }
 
         // check if the triangles are the same and delete duplicate faces
-        for (std::uint64_t i = 0; i < faces.size(); i++)
+        for (std::uint32_t i = 0; i < faces.size(); i++)
         {
             // vector of vertices id of first face
             std::vector<unsigned int> temp_face_vertices(faces[i].vertices_id);
@@ -761,9 +761,9 @@ namespace MSc
         }
 
         // check if the edges are the same and delete duplicate edges
-        for (std::uint64_t i = 0; i < edges.size(); i++)
+        for (std::uint32_t i = 0; i < edges.size(); i++)
         {
-            for(std::uint64_t j = i; j < edges.size(); j++)
+            for(std::uint64_t j = i+1; j < edges.size(); j++)
             {
                 if((edges[i].end_ver == edges[j].start_ver && edges[i].start_ver == edges[j].end_ver) ||
                    (edges[i].start_ver == edges[j].start_ver && edges[i].end_ver == edges[j].end_ver))
@@ -797,6 +797,7 @@ namespace MSc
         // make id for the faces
         for (unsigned int i = 0; i < faces.size(); i++)
             faces[i].face_id = i;
+
 
         // transform the edges to faces form to make it a face
         for (unsigned int i = 0; i < edges.size(); i++)
@@ -841,9 +842,8 @@ namespace MSc
             
             vertex_faces.insert(std::make_pair(iVertices[i].vertex_id, faces_vertex));
         }
-        
  
-            // for each face attached on the vertex
+        // for each face attached on the vertex
         for(auto const& vertex: vertex_faces)
         {
             glm::vec3 vertex_normal = glm::vec3(0.f, 0.f, 0.f);
