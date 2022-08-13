@@ -9,9 +9,9 @@
 #include <Mesh/mesh.hpp>
 
 #include <glad/glad.h>
-#include <glm/gtx/string_cast.hpp>
-#include <assimp/importer.hpp>
 
+#include <glm/gtx/string_cast.hpp> // for debug
+#include <glm/gtx/vector_angle.hpp>
 namespace MSc
 {
     ///-------------------------------------------------
@@ -19,93 +19,17 @@ namespace MSc
     ///-------------------------------------------------
     Vertex::Vertex()
     {
-        
+       
     }
-
-    ///-------------------------------------------------
-    /// HalfEdge Section
-    ///-------------------------------------------------
-    HalfEdge::HalfEdge()
-    {
-
-    }
-
-    bool HalfEdge::MakeAdjacent(HalfEdge* in, HalfEdge* out)
-    {
-        // already adjacent
-        if(in->next == out)
-        {
-            return true;
-        }
-        
-        return true;
-    }
-
     
     ///-------------------------------------------------
     /// Edge Section
     ///-------------------------------------------------
     Edge::Edge()
     {
-        this->half_edge_edge = nullptr;
+
     }
 
-    std::vector<Edge> Edge::BuildEdge(std::vector<Face> iFaces, std::vector<Vertex> iVertices)
-    {
-        //the temporary vector of edges that need to be returned
-        std::vector<Edge> temp(3 * iFaces.size());
-    
-        // 1. loop through the faces
-        // 2. for each face construct the edge
-        for(int i = 0; i < iFaces.size(); i++)
-        {
-            Edge edge0;
-            edge0.half_edge_edge = nullptr;
-            
-            Edge edge1;
-            edge1.half_edge_edge = nullptr;
-            
-            Edge edge2;
-            edge2.half_edge_edge = nullptr;
-            
-            edge0.start_vertex = iFaces[i].vertices_id[0];
-            edge0.end_vertex = iFaces[i].vertices_id[1];
-            
-            edge1.start_vertex = iFaces[i].vertices_id[1];
-            edge1.end_vertex = iFaces[i].vertices_id[2];
-            
-            edge2.start_vertex = iFaces[i].vertices_id[2];
-            edge2.end_vertex = iFaces[i].vertices_id[0];
-            
-            temp[3*i] = edge0;
-            temp[3*i+1] = edge1;
-            temp[3*i+2] = edge2;
-        }
-  
-        // remove duplicates
-        for(unsigned int i = 0; i < temp.size(); i++)
-        {
-            for(unsigned int j = 0; j < temp.size(); j++)
-            {
-                if(temp[i].start_vertex == temp[j].end_vertex && temp[i].end_vertex == temp[j].start_vertex)
-                {
-                    temp.erase(temp.begin()+j);
-                }
-            }
-        }
-   
-        // calculate length
-        for(unsigned int i = 0; i < temp.size(); i++)
-        {
-            glm::vec3 e0 = iVertices[temp[i].start_vertex].position;
-            glm::vec3 e1 = iVertices[temp[i].end_vertex].position;
-            
-            temp[i].length = glm::distance(e0, e1);
-        }
-        
-        
-        return temp;
-    }
     ///-------------------------------------------------
     /// Face Section
     ///-------------------------------------------------
@@ -119,7 +43,8 @@ namespace MSc
     ///-------------------------------------------------
     Cell::Cell()
     {
-        
+        this->left_bottom_near_point = glm::vec3(0.f,0.f,0.f);
+        this->cell_id = -1;
     }
 
     ///-------------------------------------------------
@@ -127,10 +52,20 @@ namespace MSc
     ///-------------------------------------------------
     CellSet::CellSet()
     {
-
+        this->length_x = 0.f;
+        this->length_y = 0.f;
+        this->length_z = 0.f;
+        this->cell_count = 0;
+        this->in_dimension = 0;
+        this->x_max = 0.f;
+        this->x_min = 0.f;
+        this->y_max = 0.f;
+        this->y_min = 0.f;
+        this->z_max = 0.f;
+        this->z_min = 0.f;
     }
 
-    void CellSet::ConstructAxises(std::vector<Vertex> &iVertices)
+    void CellSet::ConstructAxises(std::vector<Vertex> &iVertices, int dimension)
     {
         // 1. Loop through the 'vertices' vector, find the minX, minY, minZ, maxX, maxY, maxZ.
         // 2. Set (0,0,0) to be the origin of the grid
@@ -158,9 +93,9 @@ namespace MSc
         z_min = *std::min_element(z_pos.begin(), z_pos.end());
         z_max = *std::max_element(z_pos.begin(), z_pos.end());
         
-        length_x = x_max - x_min + 0.01f;
-        length_y = y_max - y_min + 0.01f;
-        length_z = z_max - z_min + 0.01f;
+        length_x = (x_max - x_min) / dimension;
+        length_y = (y_max - y_min) / dimension;
+        length_z = (z_max - z_min) / dimension;
         
         //clear the vector
         x_pos.clear();
@@ -168,20 +103,23 @@ namespace MSc
         z_pos.clear();
     }
 
-    void CellSet::ConstructGrid(unsigned int in_dimension)
+    void CellSet::ConstructGrid(int in_dimension, std::vector<Cell> &iCells)
     {
         // 1. divide the lenght of x, y, z axies by thier dimensions to get the length of each cell in thier dimension
         //  save the length to the parameters length_x, length_y, length_z
         // 2. set the boundary to the minX->maxX, minY->maxY, minZ->maxZ
         // 3. loop through the cells to add cells to the grid
          Cell cell;
-         for( int i = 0; i < in_dimension; i++ ) //(z dimension)
-             for( int j = 0; j < in_dimension; j++ ) //(y dimension)
-                 for( int m = 0; m < in_dimension; m++ ) //(x dimension)
+      //   #pragma omp parallel for num_threads(4) collapse(3)
+         for(unsigned int i = 0; i < in_dimension; i++ ) //(z dimension)
+             for(unsigned int j = 0; j < in_dimension; j++ ) //(y dimension)
+                 for(unsigned int m = 0; m < in_dimension; m++ ) //(x dimension)
                  {
+                     
                      cell.left_bottom_near_point = glm::vec3( m * length_x + x_min, j * length_y + y_min, i * length_z + z_min);
-                     cell.cell_id = in_dimension * j + (in_dimension)^2 * i + m;
-                     cells.emplace_back(cell);
+                     cell.cell_id = m + in_dimension * j + std::powf((float)in_dimension, 2.f) * i;
+                     iCells.emplace_back(cell);
+                     cell_count++;
                  }
     }
 
@@ -192,10 +130,8 @@ namespace MSc
 
     // the section for Rendering
     
-    Mesh::Mesh(std::string fileName)
+    Mesh::Mesh()
     {
-        LoadObj(fileName);
-        SetUp();
     };
 
     std::vector<std::string> Mesh::Split(std::string str, char del)
@@ -255,14 +191,15 @@ namespace MSc
                 face.face_id = face_id;
                 for(int i = 0; i < face_index.size(); i++)
                 {
-                    if(face_index[i] != "f")
+                    if(face_index[i] != "f" )
                     {
                         std::vector<std::string> sub_token = Split(face_index[i], '/');
+                        
                         face.vertices_id.emplace_back(std::stoi(sub_token[0]) - 1);
+                        face.normals_id.emplace_back(std::stoi(sub_token[2]) - 1);
                     }
    
                 }
-                face.half_edge_face = nullptr;
                 
                 faces.emplace_back(face);
                 
@@ -272,20 +209,11 @@ namespace MSc
         //close file
         objFile.close();
         
-        //set up the indices list
-        
-        for(int i = 0; i < faces.size(); i++)
-        {
-            for(int j = 0; j < faces[i].vertices_id.size(); j++)
-                indices.emplace_back(faces[i].vertices_id[j]);
-        }
-        
         //set up the vertices table
-        BuildVertices(positions, normals);
-        
-        //set up edges
-        edges = Edge::BuildEdge(faces, vertices);
-        
+        BuildVertices(positions, normals, faces);
+
+        std::cout << "vertices: " << vertices.size() << std::endl;
+        std::cout << "faces: " << faces.size() << std::endl;
     }
 
     void Mesh::ExportObj(std::string fileName)
@@ -301,44 +229,74 @@ namespace MSc
         
         if(writeFile.is_open())
         {
-            for(unsigned int i = 0; i < positions.size(); i++)
+            for(unsigned int i = 0; i < simplified_vertices.size(); i++)
             {
-                writeFile << "v " << Mesh::positions[i].x << " " << Mesh::positions[i].y << " " << Mesh::positions[i].z << "\n";
+                writeFile << "v " << Mesh::simplified_vertices[i].position.x << " " << Mesh::simplified_vertices[i].position.y << " " << Mesh::simplified_vertices[i].position.z << "\n";
             }
         
-            for(unsigned int i = 0; i < normals.size(); i++)
+            for(unsigned int i = 0; i < simplified_vertices.size(); i++)
             {
-                writeFile << "vn " << Mesh::normals[i].x << " " << Mesh::normals[i].y << " " << Mesh::normals[i].z << "\n";
+                writeFile << "vn " << Mesh::simplified_vertices[i].normal.x << " " << Mesh::simplified_vertices[i].normal.y << " " << Mesh::simplified_vertices[i].normal.z << "\n";
             }
         
-            for(const auto& face: faces)
+            for(const auto& face: simplified_triangles)
             {
                 writeFile << "f ";
                 for(std::uint8_t j = 0; j < face.vertices_id.size(); j++)
                 {
                     if(j == 2)
-                        writeFile << face.vertices_id[j] << "//" << face.vertices_id[j] << "\n";
+                        writeFile << face.vertices_id[j]+1 << "//" << face.vertices_id[j]+1 << "\n";
                     else
-                        writeFile << face.vertices_id[j] << "//" << face.vertices_id[j] << " ";
+                        writeFile << face.vertices_id[j]+1 << "//" << face.vertices_id[j]+1 << " ";
                 }
             }
             writeFile.close();
         }
         
+        std::cout << "Complete Exporting" << std::endl;
     }
 
-    void Mesh::BuildVertices(std::vector<glm::vec3> iPositions, std::vector<glm::vec3> iNormals)
+    void Mesh::BuildVertices(std::vector<glm::vec3> &iPositions, std::vector<glm::vec3> &iNormals, std::vector<Face> &iFaces)
     {
+
+        // used for simplification
         for(unsigned int i = 0; i < iPositions.size(); i++)
         {
             Vertex vertex;
-            
+
             vertex.position = iPositions[i];
-            vertex.normal = iNormals[i];
             vertex.vertex_id = i;
-            vertex.half_edge_vertex = nullptr;
             
             vertices.emplace_back(vertex);
+        }
+
+        // used for render
+        for (unsigned int j = 0; j < iFaces.size(); j++)
+        {
+            Vertex_Render vertex0;
+            vertex0.position = iPositions[iFaces[j].vertices_id[0]];
+            vertex0.normal = iNormals[iFaces[j].normals_id[0]];
+
+            vertices_render.push_back(vertex0);
+
+            Vertex_Render vertex1;
+            vertex1.position = iPositions[iFaces[j].vertices_id[1]];
+            vertex1.normal = iNormals[iFaces[j].normals_id[1]];
+
+            vertices_render.push_back(vertex1);
+
+            Vertex_Render vertex2;
+            vertex2.position = iPositions[iFaces[j].vertices_id[2]];
+            vertex2.normal = iNormals[iFaces[j].normals_id[2]];
+
+            vertices_render.push_back(vertex2);
+        }
+
+        //set up the indices list
+
+        for (int i = 0; i < vertices_render.size(); i++)
+        {
+            indices.emplace_back(i);
         }
     }
 
@@ -352,17 +310,17 @@ namespace MSc
         
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertices_render.size() * sizeof(Vertex_Render), &vertices_render[0], GL_STATIC_DRAW);
         
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
         
         //vertex positions
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex_Render), (void*)0);
         // vertex normals
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex_Render), (void*)offsetof(Vertex_Render, normal));
       
     }
 
@@ -373,49 +331,111 @@ namespace MSc
         glBindVertexArray(0);
     }
 
+    /*
+    void Mesh::RenderSimplified(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
+    {
+        vertices_render.clear();
+        indices.clear();
+        
+        for (unsigned int j = 0; j < iFaces.size(); j++)
+        {
+            Vertex_Render vertex0;
+            vertex0.position = iVertices[iFaces[j].vertices_id[0]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[0]].normal;
 
+            vertices_render.push_back(vertex0);
 
+            Vertex_Render vertex1;
+            vertex0.position = iVertices[iFaces[j].vertices_id[1]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[1]].normal;
+            
+            vertices_render.push_back(vertex1);
 
+            Vertex_Render vertex2;
+            vertex0.position = iVertices[iFaces[j].vertices_id[2]].position;
+            vertex0.normal = iVertices[iFaces[j].normals_id[2]].normal;
+            
+            vertices_render.push_back(vertex2);
+        }
+
+        //set up the indices list
+
+        for (int i = 0; i < vertices_render.size(); i++)
+        {
+            indices.emplace_back(i);
+        }
+    }
+    */
     // The section for Simplification
 
-    void Mesh::BuildHalfEdge(std::vector<Edge> iEdges, std::vector<Vertex> iVertices)
+    std::vector<Edge> Mesh::BuildEdge(std::vector<Face> &iFaces, std::vector<Vertex> &iVertices)
     {
-        Edge edge;
-        HalfEdge half_edge;
-        // 1. Loop the faces
-            for ( int i = 0; i < faces.size(); i++)
-        // 2. For each face
-                 for( int j = 0; j < 3; j++ )
-                 {
-                     if( j + 1 > 2)
-                     {
-                         half_edge.end_vertex->vertex_id = faces[i].vertices_id[j-2];
-                         half_edge.face = &faces[i];
-                         half_edge.half_edge_id = faces[i].face_id;
-                     }
-                     else
-                     {
-                         half_edge.end_vertex->vertex_id = faces[i].vertices_id[j+1];
-                         half_edge.face = &faces[i];
-                         half_edge.half_edge_id = faces[i].face_id;
-                     }
-                     
-                 }
-        // 3. Delete the duplicates
-            ///for(int i = 0; i < edges.size(); i++)
-            ///     for(int j = 0; j < edges.size(); j++)
-            ///         if ( edges[i].v0 == edges[j].v1 && edges[i].v1 == edges[j].v0)
-            ///             edges.erase(j);
-        // 4. finish edges
+        //the temporary vector of edges that need to be returned
+        std::vector<Edge> temp(3 * iFaces.size());
         
-        // 5. start half_edge
+        Edge edge0;
+        Edge edge1;
+        Edge edge2;
+        // 1. loop through the faces
+        // 2. for each face construct the edge
+        for(int i = 0; i < iFaces.size(); i++)
+        {
+            edge0.start_ver = &iVertices[iFaces[i].vertices_id[0]];
+            edge0.end_ver = &iVertices[iFaces[i].vertices_id[1]];
+
+            edge1.start_ver = &iVertices[iFaces[i].vertices_id[1]];
+            edge1.end_ver = &iVertices[iFaces[i].vertices_id[2]];
+
+            edge2.start_ver = &iVertices[iFaces[i].vertices_id[2]];
+            edge2.end_ver = &iVertices[iFaces[i].vertices_id[0]];
+
+            temp[3*i] = edge0;
+            temp[3*i+1] = edge1;
+            temp[3*i+2] = edge2;
+        }
+
+        // remove duplicates
+
+        for(unsigned int i = 0; i < temp.size(); i++)
+        {
+            // set a bool parameter to check if find the duplicates
+            // because there will be only one duplicate, so when find the duplicate
+            // we can delete it and beak out of the internal loop to the outter loop
+            bool skipper = false;
+
+            for(unsigned int j = 0; !skipper && j < temp.size(); j++)
+            {
+                if(temp[i].start_ver == temp[j].end_ver && temp[i].end_ver == temp[j].start_ver)
+                {
+                    //when find the same edge, delete and break out of the inner loop to faster the program
+                    temp.erase(temp.begin()+j);
+                    skipper = true;
+                }
+            }
+        }
+
+        // calculate length
+        for(unsigned int i = 0; i < temp.size(); i++)
+        {
+          //  glm::vec3 e0 = iVertices[temp[i].start_vertex].position;
+          //  glm::vec3 e1 = iVertices[temp[i].end_vertex].position;
+            
+            glm::vec3 e0 = temp[i].start_ver->position;
+            glm::vec3 e1 = temp[i].end_ver->position;
+
+            temp[i].length = glm::distance(e0, e1);
+        }
+        
+
+        return temp;
     }
 
- 
+
     //cell_table -> std::map<int, std::vector<unsigned int>>
     //weight_table -> std::map<int, float>
-    void Mesh::CalculateSVtable(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices)
+    std::vector<Vertex> Mesh::CalculateSimplifiedVertices(cell_table &Ctable, weight_table &Wtable, std::vector<Vertex> &iVertices)
     {
+        std::vector<Vertex> temp;
         
         unsigned int new_vertex_id = 0;
         // 1. loop through the cells
@@ -428,18 +448,18 @@ namespace MSc
                 //do nothing
             }
             // when there is only one vertex in the cell
-            else if(cell.second.size() < 2 && cell.second.size() > 0)
+            else if(cell.second.size() == 1)
             {
                 vertex.position = iVertices[cell.second[0]].position;
+                vertex.normal = glm::vec3(0.f, 0.f, 0.f);
                 vertex.vertex_id = new_vertex_id;
-                vertex.half_edge_vertex = nullptr;
                 
-                simplified_vertices.emplace_back(vertex);
+                temp.emplace_back(vertex);
                 
                 new_vertex_id++;
             }
             // when there are more than one vertex in the cell
-            else
+            else if(cell.second.size() >= 2)
             {
                 // use for temporary saving the represetative vertex position
                 glm::vec3 temp_pos = glm::vec3(0.f, 0.f, 0.f);
@@ -449,21 +469,47 @@ namespace MSc
                 // 2. loop through the vertices in cell
                 for(auto id: cell.second)
                     cell_total_weight = Wtable[id] + cell_total_weight;
-            
+    
                 for(auto id: cell.second)
                     // representative vertex = (vertex.position * ( vertex_weight / total_vertices_weight_cell)) * all_vertices
-                temp_pos = temp_pos + iVertices[id].position * Wtable[id] / cell_total_weight;
+                    temp_pos = temp_pos + iVertices[id].position * Wtable[id] / cell_total_weight;
                 
                 vertex.position = temp_pos;
                 vertex.vertex_id = new_vertex_id;
-                vertex.half_edge_vertex = nullptr;
                 
-                simplified_vertices.emplace_back(vertex);
+                temp.emplace_back(vertex);
                 
                 new_vertex_id++;
             }
         }
         
+        return temp;
+    }
+
+    //helper function to make the life easier when mapping vertex to cell
+    unsigned int Mesh::GetCellid(Vertex &iVertex, CellSet &iGrid)
+    {
+        unsigned int cell_id;
+        
+        // shift the vertex to the positive half of the axis
+        glm::vec3 shifted_vertex = iVertex.position - glm::vec3(iGrid.x_min, iGrid.y_min, iGrid.z_min);
+        
+        // get he floor number of the (shifted vertex position / the length of a cell in each dimension)
+        unsigned int x_dimension = static_cast<unsigned int>(std::floor(shifted_vertex.x / iGrid.length_x));
+        unsigned int y_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.y / iGrid.length_y));
+        unsigned int z_dimension =  static_cast<unsigned int>(std::floor(shifted_vertex.z / iGrid.length_z));
+        
+        // if the vertex is fall on the top / right / far plane of the whole cluster
+        if(x_dimension == iGrid.in_dimension)
+            x_dimension = x_dimension - 1;
+        else if (y_dimension == iGrid.in_dimension)
+            y_dimension = y_dimension - 1;
+        else if (z_dimension == iGrid.in_dimension)
+            z_dimension = z_dimension - 1;
+        
+        cell_id = x_dimension + (y_dimension * iGrid.in_dimension) + (z_dimension * std::powf((float)iGrid.in_dimension,2.f));
+        
+        return cell_id;
     }
 
     // C table
@@ -474,31 +520,21 @@ namespace MSc
         
         //the vector of vertices in the cell
         std::vector<unsigned int> vertices_in_cell;
-        
-        //brute force looping
-        
+
         //loop through the grid
         for(unsigned int i = 0; i < iGrid.cells.size(); i++)
         {
-            //count the total number of vertices in the cell
-            iGrid.cells[i].number_of_vertices = 0;
-            
             //loop through the vertices
             for(unsigned int j = 0; j < iVertices.size(); j++)
             {
-                // the vertex on the left/bottom/near boundary of cell is counted in this cell, on the right/top/far boundary of cell is not counted in this cell.
-                if(iVertices[j].position.x >= iGrid.cells[i].left_bottom_near_point.x &&
-                   iVertices[j].position.x < iGrid.cells[i].left_bottom_near_point.x + iGrid.length_x &&
-                   iVertices[j].position.y >= iGrid.cells[i].left_bottom_near_point.y &&
-                   iVertices[j].position.y < iGrid.cells[i].left_bottom_near_point.y + iGrid.length_y &&
-                   iVertices[j].position.z >= iGrid.cells[i].left_bottom_near_point.z &&
-                   iVertices[j].position.z < iGrid.cells[i].left_bottom_near_point.z + iGrid.length_z)
+                // convert the x,y,z dimension of the cell to cell id
+                if(iGrid.cells[i].cell_id == GetCellid(iVertices[j], iGrid))
                 {
-                    vertices_in_cell.emplace_back(iVertices[j].vertex_id);
-                    iGrid.cells[i].number_of_vertices++;
+                    vertices_in_cell.emplace_back(vertices[j].vertex_id);
                 }
             }
-            c_table.insert(std::make_pair(i, vertices_in_cell));
+            
+            c_table.insert(std::make_pair(iGrid.cells[i].cell_id, vertices_in_cell));
             
             vertices_in_cell.clear();
         }
@@ -506,7 +542,7 @@ namespace MSc
     }
  
     // W table
-    std::map<int, float> Mesh::CalculateWeight(std::vector<Vertex> iVertices, std::vector<Edge> iEdges)
+    std::map<unsigned int, float> Mesh::CalculateWeight(std::vector<Vertex> &iVertices, std::vector<Edge> &iEdges)
     {
         // 1. loop through the vertices
         // 2. find all edges attached on the vertex
@@ -516,67 +552,378 @@ namespace MSc
         
         // get the length of edges
         
-        std::map<int, float> temp;
+        std::map<unsigned int, float> temp;
         
-        for(unsigned int i = 0; i < iVertices.size(); i++)
+        
+        if(!curvature_area)
         {
-            std::priority_queue<float> length_queue;
-            
-            for(unsigned int j = 0; j < iEdges.size(); j++)
+            for(unsigned int i = 0; i < iVertices.size(); i++)
             {
-                if(iEdges[j].start_vertex == iVertices[i].vertex_id || iEdges[j].end_vertex == iVertices[i].vertex_id)
-                {
-                    length_queue.push(iEdges[j].length);
-                }
-            }
+                std::priority_queue<float> length_queue;
             
-            temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+                for(unsigned int j = 0; j < iEdges.size(); j++)
+                {
+                    if(iEdges[j].start_ver == &iVertices[i] || iEdges[j].end_ver == &iVertices[i])
+                    {
+                        length_queue.push(iEdges[j].length);
+                    }
+                }
+                if(length_queue.size() != 0)
+                    temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, length_queue.top()));
+                else
+                    temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, 0.f));
+            }
         }
         
-        weight_of_vertex = temp;
-        
-        return weight_of_vertex;
-    }
-
-
-    // R table
-    std::map<int, int> Mesh::CalculateRepresentativeVertices(CellSet &iGrid, std::vector<Vertex> &iVertices)
-    {
-        std::map<int, int> temp;
-        // loop through the V table(all vertices)
-        for(unsigned int i = 0; i < iVertices.size(); i++)
+        else if(curvature_area)
         {
-            // loop through the grid(cluster)
-            for(unsigned int j = 0; j < iGrid.cells.size(); j++)
+            std::map<Vertex*, std::vector<Edge*>> edges_on_vertex;
+            
+            std::vector<Edge*> edges_ver;
+            
+            for(unsigned int i = 0; i < iVertices.size(); i++)
             {
-                if(iVertices[i].position.x < iGrid.cells[j].left_bottom_near_point.x + iGrid.length_x &&
-                   iVertices[i].position.x >= iGrid.cells[j].left_bottom_near_point.x &&
-                   iVertices[i].position.y < iGrid.cells[j].left_bottom_near_point.y + iGrid.length_y &&
-                   iVertices[i].position.y >= iGrid.cells[j].left_bottom_near_point.y &&
-                   iVertices[i].position.z < iGrid.cells[j].left_bottom_near_point.z + iGrid.length_z &&
-                   iVertices[i].position.z >= iGrid.cells[j].left_bottom_near_point.z)
+                for(unsigned int j = 0; j < iEdges.size(); j++)
                 {
-                    temp.insert(std::make_pair(iVertices[i].vertex_id, iGrid.cells[j].cell_id));
+                    if(iVertices[i].vertex_id == iEdges[j].end_ver->vertex_id ||
+                       iVertices[i].vertex_id == iEdges[j].start_ver->vertex_id)
+                    {
+                        edges_ver.push_back(&iEdges[j]);
+                    }
                 }
+                
+                edges_on_vertex.insert(std::make_pair(&iVertices[i], edges_ver));
+            }
+            
+            for(unsigned int i = 0; i < iVertices.size(); i++)
+            {
+                float angle = 0.f;
+                
+                std::vector<float> edges_angle;
+                
+                for(auto const& one_edge : edges_on_vertex)
+                {
+                    
+                    if(one_edge.first->vertex_id == iVertices[i].vertex_id)
+                    {
+                        glm::vec3 vertex_normal = iVertices[i].normal;
+                        
+                        for(auto const& incident_edge : one_edge.second)
+                        {
+                            glm::vec3 incident = incident_edge->start_ver->position - incident_edge->end_ver->position;
+                            
+                            float angle = 1 / glm::angle(vertex_normal, incident);
+                            
+                            edges_angle.push_back(angle);
+                        }
+                    }
+                    
+                }
+                
+                std::sort(edges_angle.begin(), edges_angle.end());
+                
+                temp.insert(std::make_pair(iVertices[i].vertex_id, edges_angle[0]));
             }
         }
         
         return temp;
     }
 
-    std::tuple<std::vector<Vertex>, std::vector<Edge>, std::vector<Face>> Mesh::Elimination(std::vector<Face> iFaces, std::map<int, int> iRtable)
+    // R table (key is the cell id, value is the vertex id)
+    std::map<unsigned int, unsigned int> Mesh::CalculateRepresentativeVertices(CellSet& iGrid, std::vector<Vertex>& iVertices)
+    {
+        std::map<unsigned int, unsigned int> temp;
+
+        for (unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            //use as a "continue" in normal loop
+            //when the if is true, jump out of the inner loop, run next iteration of 
+            bool skipper = false;
+
+            for (unsigned int j = 0; !skipper && j < iGrid.cells.size(); j++)
+            {
+                // convert the x,y,z dimension of the cell to cell id
+                if (iGrid.cells[j].cell_id == GetCellid(iVertices[i], iGrid))
+                {
+                    temp.insert(std::make_pair(iGrid.cells[j].cell_id, iVertices[i].vertex_id));
+                    skipper = true;
+                }
+            }
+        }
+
+        return temp;
+    }
+
+    std::vector<Face> Mesh::Elimination(std::vector<Face> &iFaces,
+        std::map<unsigned int, unsigned int>& iRtable,
+        CellSet& iGrid,
+        std::vector<Vertex>& iVertices,
+        std::vector<Vertex>& iVertices_original)
     {
         std::vector<Face> faces;
         std::vector<Edge> edges;
-        std::vector<Vertex> points;
+
+                   // vertex id   // cell id
+        std::map<unsigned int, unsigned int> cell_No_of_vertex; // the map of original vertex and cell id
+
+        // loop through all the original vertices
+        for (unsigned int i = 0; i < iVertices_original.size(); i++)
+        {
+            // the skipper helps get out of the internal loop 
+            // to make the program faster
+            // because the vertex can only falls into a single cell 
+            // so this "skipper" can be used
+            bool skipper = false;
+
+            for (unsigned int j = 0; !skipper && j < iGrid.cells.size(); j++)
+            {
+                if (iGrid.cells[j].cell_id == GetCellid(iVertices_original[i], iGrid))
+                {
+                    // fill the map of original vertex id and its coressponding cell id
+                    cell_No_of_vertex.insert(std::make_pair(iVertices_original[i].vertex_id, iGrid.cells[j].cell_id));
+                    skipper = true;
+                }
+            }
+        }
+
+        // for each face
+        for (auto const& face : iFaces)
+        {
+            Edge edge;
+            Face simp_face;
+            //if all vertices of the face is in the same cell
+            if ((cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1])) &&
+                (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[2])))
+            {
+                continue;
+            }
+            //if two vertices of the face is in the same cell
+            else if (cell_No_of_vertex.at(face.vertices_id[0]) == cell_No_of_vertex.at(face.vertices_id[1]))
+            {
+                // cell_No_of_vertex.at --> get the cell id of the original vertex falls in
+                // iRtable.at --> get the representative vertex id of the current cell get from cell_No_of_vertex.at 
+                // iVertices[] --> get the simplified vertex from its id                                   
+                edge.start_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))];
+                edge.end_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))];
+
+                edges.emplace_back(edge);
+            }
+            else if (cell_No_of_vertex.at(face.vertices_id[1]) == cell_No_of_vertex.at(face.vertices_id[2]))
+            {
+                edge.start_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))];
+                edge.end_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))];
+
+                edges.emplace_back(edge);
+            }
+            else if (cell_No_of_vertex.at(face.vertices_id[2]) == cell_No_of_vertex.at(face.vertices_id[0]))
+            {
+                edge.start_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))];
+                edge.end_ver = &iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))];
+
+                edges.emplace_back(edge);
+            }
+
+            //if all vertices are in different cell
+            else if((cell_No_of_vertex.at(face.vertices_id[2]) != cell_No_of_vertex.at(face.vertices_id[0])) &&
+                    (cell_No_of_vertex.at(face.vertices_id[1]) != cell_No_of_vertex.at(face.vertices_id[0])) &&
+                    (cell_No_of_vertex.at(face.vertices_id[2]) != cell_No_of_vertex.at(face.vertices_id[1])))
+            {
+                simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[0]))].vertex_id);
+                simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[1]))].vertex_id);
+                simp_face.vertices_id.push_back(iVertices[iRtable.at(cell_No_of_vertex.at(face.vertices_id[2]))].vertex_id);
+                simp_face.face_id = 0;
+
+                faces.emplace_back(simp_face);
+            }
+        }
+
+        // check if the triangles are the same and delete duplicate faces
+        for (std::uint64_t i = 0; i < faces.size(); i++)
+        {
+            // vector of vertices id of first face
+            std::vector<unsigned int> temp_face_vertices(faces[i].vertices_id);
+
+            for (unsigned int j = i+1; j < faces.size(); j++)
+            {
+                // vector of vertices id of second face
+                std::vector<unsigned int> temp_other_facevertices(faces[j].vertices_id);
+
+                // sort two vectors
+                std::sort(temp_face_vertices.begin(), temp_face_vertices.end());
+                std::sort(temp_other_facevertices.begin(), temp_other_facevertices.end());
+
+                // if two vectors are equal erase one face
+                if (temp_face_vertices == temp_other_facevertices)
+                {
+                    faces.erase(faces.begin() + j);
+                }
+            }
+        }
+
+        // check if the edges are the same and delete duplicate edges
+        for (std::uint64_t i = 0; i < edges.size(); i++)
+        {
+            for(std::uint64_t j = i; j < edges.size(); j++)
+            {
+                if((edges[i].end_ver == edges[j].start_ver && edges[i].start_ver == edges[j].end_ver) ||
+                   (edges[i].start_ver == edges[j].start_ver && edges[i].end_ver == edges[j].end_ver))
+                {
+                    edges.erase(edges.begin()+j);
+                }
+            }
+        }
         
-        return {points, edges, faces};
+        // check if the edge is on the boundary or inside simplified triangles
+        // and delete the edges inside the trinagles
+        for (unsigned int i = 0; i < edges.size(); i++)
+        {
+            bool skipper = false;
+
+            for (unsigned int j = 0; !skipper && j < faces.size(); j++)
+            {
+                if ((edges[i].start_ver == &iVertices[faces[j].vertices_id[0]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[1]]) ||
+                    (edges[i].start_ver == &iVertices[faces[j].vertices_id[1]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[0]]) ||
+                    (edges[i].start_ver == &iVertices[faces[j].vertices_id[1]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[2]]) ||
+                    (edges[i].start_ver == &iVertices[faces[j].vertices_id[2]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[1]]) ||
+                    (edges[i].start_ver == &iVertices[faces[j].vertices_id[0]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[2]]) ||
+                    (edges[i].start_ver == &iVertices[faces[j].vertices_id[2]] && edges[i].end_ver == &iVertices[faces[j].vertices_id[0]]))
+                {
+                    edges.erase(edges.begin() + i);
+                    skipper = true;
+                }
+            }
+        }
+
+        // make id for the faces
+        for (unsigned int i = 0; i < faces.size(); i++)
+            faces[i].face_id = i;
+
+        // transform the edges to faces form to make it a face
+        for (unsigned int i = 0; i < edges.size(); i++)
+        {
+            Face face;
+            face.face_id = faces.size();
+            face.vertices_id.push_back(edges[i].start_ver->vertex_id);
+            face.vertices_id.push_back(edges[i].end_ver->vertex_id);
+            face.vertices_id.push_back(edges[i].start_ver->vertex_id);
+
+            faces.push_back(face);
+        }
+
+        return faces;
     }
 
-    void Mesh::Initialize()
+    void Mesh::CalculateVertexNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices)
     {
-        weight_of_vertex = CalculateWeight(vertices, edges);
+        // map of face normals, key is face id, value is face normal
+        std::map<unsigned int, glm::vec3> face_normals = CalculateFaceNormal(iFace, iVertices);
         
+        // key is vertex id, value is faces id that are neighbors of vertex
+        std::map<unsigned int, std::vector<unsigned int>> vertex_faces;
+        
+        //fill the map "vertex_faces"
+        for (unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            std::vector<unsigned int> faces_vertex;
+            // for each face
+            for(const auto& face : iFace)
+            {
+                // for each vertex in face
+                for(unsigned int j = 0; j < face.vertices_id.size(); j++)
+                {
+                    //check if the vertex is in this face
+                    if(iVertices[i].vertex_id == face.vertices_id[j])
+                    {
+                        faces_vertex.push_back(face.face_id);
+                    }
+                }
+            }
+            
+            vertex_faces.insert(std::make_pair(iVertices[i].vertex_id, faces_vertex));
+        }
+        
+ 
+            // for each face attached on the vertex
+        for(auto const& vertex: vertex_faces)
+        {
+            glm::vec3 vertex_normal = glm::vec3(0.f, 0.f, 0.f);
+            // add all face normals to the vertex_normal
+            for(unsigned int j = 0; j < vertex.second.size(); j++)
+            {
+                vertex_normal = vertex_normal + face_normals.at(vertex.second[j]);
+            }
+
+            // get the average face normal
+            vertex_normal = glm::vec3(vertex_normal.x / vertex.second.size(), vertex_normal.y / vertex.second.size(), vertex_normal.z / vertex.second.size());
+            
+            // normalize the average of sum of face normals to get the final vertex normal
+            iVertices[vertex.first].normal = glm::normalize(vertex_normal);
+        }
+
+        face_normals.clear();
+        vertex_faces.clear();
+    }
+
+    std::map<unsigned int, glm::vec3> Mesh::CalculateFaceNormal(std::vector<Face> iFace, std::vector<Vertex>& iVertices)
+    {
+        std::map<unsigned int, glm::vec3> face_normal;
+
+        for (unsigned int i = 0; i < iFace.size(); i++)
+        {
+            glm::vec3 u = iVertices[iFace[i].vertices_id[1]].position - iVertices[iFace[i].vertices_id[0]].position;
+            glm::vec3 v = iVertices[iFace[i].vertices_id[2]].position - iVertices[iFace[i].vertices_id[1]].position;
+
+            glm::vec3 normal = glm::cross(u,v);
+
+            face_normal.insert(std::make_pair(iFace[i].face_id, normal));
+        }
+
+        return face_normal;
+    }
+
+    void Mesh::Initialize(CellSet &iGrid, int dimension)
+    {
+        clock_t start, end;
+        double time;
+
+        start = clock();
+        /// ------------------------------
+        /// Grading
+        /// ------------------------------
+        // W table
+        edges = BuildEdge(faces, vertices);
+
+        weight_of_vertex = CalculateWeight(vertices, edges);
+
+        /// ------------------------------
+        /// Clustering
+        /// ------------------------------
+        // C table
+        iGrid.ConstructAxises(vertices, dimension);
+        iGrid.ConstructGrid(dimension, iGrid.cells);
+
+        vertices_in_cell = CalculateVerticesInCell(vertices, iGrid);
+
+        /// ------------------------------
+        /// Synthesis
+        /// ------------------------------
+        // SV table + R table + ST table
+        simplified_vertices = CalculateSimplifiedVertices(vertices_in_cell, weight_of_vertex, vertices);
+        
+        representative_vertex_of_cell = CalculateRepresentativeVertices(iGrid, simplified_vertices);
+
+        simplified_triangles = Elimination(faces, representative_vertex_of_cell, iGrid, simplified_vertices, vertices);
+
+        /// ------------------------------
+        /// ReNormal
+        /// ------------------------------
+        CalculateVertexNormal(simplified_triangles, simplified_vertices);
+
+        end = clock();
+
+        time = double(end - start) / double(CLOCKS_PER_SEC);
+
+        std::cout << "Complete Simplification with time: " << time << std::endl;
     }
 
 }

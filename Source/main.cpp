@@ -43,6 +43,8 @@ bool enableMouse = false;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// lighting position
+glm::vec3 light_position(-2.f, 2.f, -2.f);
 
 int main(int argc, const char * argv[])
 	{
@@ -161,17 +163,14 @@ int main(int argc, const char * argv[])
         
 #ifdef __APPLE__
         Shader shader("../../Shader/shader.vert", "../../Shader/shader.frag");
-        Mesh mesh("../../assets/test.obj");
-        mesh.ExportObj("../../assets/test1.obj");
-        mesh.Initialize();
+        Mesh mesh;
 #else
         Shader shader("./Shader/shader.vert", "./Shader/shader.frag");
-		Mesh mesh("./assets/test.obj");
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
-        
+        Mesh mesh;
+    
 #endif
         CellSet grid;
-        Inspector inspector(&grid);
+        Inspector inspector(grid, mesh);
         Interface interface(&inspector);
         
 	        // Main loop
@@ -184,7 +183,6 @@ int main(int argc, const char * argv[])
 				ImGui::NewFrame();
 
 				interface.ShowGUI();
-				ImGui::ShowDemoWindow();
 
 				ImGui::Render();
 
@@ -198,13 +196,19 @@ int main(int argc, const char * argv[])
 				int window_w, window_h;
 				glfwGetFramebufferSize(window, &window_w, &window_h);
 				glViewport(0, 0, window_w, window_h);
-				ImVec4 clear_colour = ImVec4(0.45f, 0.55f, 0.6f, 1.f);
+				ImVec4 clear_colour = ImVec4(0.2784f, 0.2784f, 0.2784f, 1.f);
 				glClearColor(clear_colour.x * clear_colour.w, clear_colour.y * clear_colour.w, clear_colour.z * clear_colour.w, clear_colour.w);
 				glClear(GL_COLOR_BUFFER_BIT);
 
                 // render the triangle
                 shader.use();
 
+                // set up the lighting
+                shader.setVec3("meshColour", 0.85f, 0.85f, 0.85f);
+                shader.setVec3("lightColour", 1.f, 1.f, 1.f);
+                shader.setVec3("lightPos", light_position);
+                shader.setVec3("viewPos", camera.position);
+                
                 // set up the MVP matrices.
                 glm::mat4 model = glm::mat4(1.0f);
                 glm::mat4 projection = glm::perspective(glm::radians(60.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -249,6 +253,7 @@ void glfw_callback_key_press(GLFWwindow* aWindow, int aKey, int /*aScanCode*/, i
         if(GLFW_KEY_L == aKey && GLFW_PRESS == aAction)
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            
         }
         else if(GLFW_KEY_F == aKey && GLFW_PRESS ==aAction)
         {
@@ -296,7 +301,7 @@ void glfw_callback_key_press(GLFWwindow* aWindow, int aKey, int /*aScanCode*/, i
         else if (glfwGetKey(aWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
             camera.speedScalar = 0.05f;
         
-       // std::cout <<glm::to_string(camera.position) << std::endl;
+    //    std::cout <<glm::to_string(camera.position) << std::endl;
     }
 
     void glfw_callback_cursor_pos(GLFWwindow* window, double xPos, double yPos)
