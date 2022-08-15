@@ -14,12 +14,17 @@
 #include <glm/gtx/vector_angle.hpp>
 namespace MSc
 {
+    bool compare(const HalfEdge& a, const HalfEdge& b)
+    {
+        return a.start_vertex->vertex_id < b.start_vertex->vertex_id;
+    }
+
     ///-------------------------------------------------
     /// Vertex Section
     ///-------------------------------------------------
     Vertex::Vertex()
     {
-       
+        this->halfEdge = nullptr;
     }
     
     ///-------------------------------------------------
@@ -35,7 +40,8 @@ namespace MSc
     ///-------------------------------------------------
     HalfEdge::HalfEdge()
     {
-        this->end_vertex = nullptr;
+        this->length = 0.f;
+        this->start_vertex = nullptr;
         this->face_of_edge = nullptr;
         this->next_edge = nullptr;
         this->pair_edge = nullptr;
@@ -47,7 +53,7 @@ namespace MSc
     ///-------------------------------------------------
     Face::Face()
     {
-        
+        this->halfEdge = nullptr;
     }
 
     ///-------------------------------------------------
@@ -446,36 +452,58 @@ namespace MSc
     {
         std::vector<HalfEdge> temp(3*iFaces.size());
         
+        // add previous and next to the half edge
         for(unsigned int i = 0; i < iFaces.size(); i++)
         {
-            temp[3*i].end_vertex = &iVertices[iFaces[i].vertices_id[1]];
+            temp[3*i].start_vertex = &iVertices[iFaces[i].vertices_id[0]];
             temp[3*i].face_of_edge = &iFaces[i];
             temp[3*i].prev_edge = &temp[3*i+2];
             temp[3*i].next_edge = &temp[3*i+1];
-            
-            temp[3*i+1].end_vertex = &iVertices[iFaces[i].vertices_id[2]];
+            iFaces[i].halfEdge = &temp[3*i];
+
+            temp[3*i+1].start_vertex = &iVertices[iFaces[i].vertices_id[1]];
             temp[3*i+1].face_of_edge = &iFaces[i];
             temp[3*i+1].prev_edge = &temp[3*i];
             temp[3*i+1].next_edge = &temp[3*i+1];
             
-            temp[3*i+2].end_vertex = &iVertices[iFaces[i].vertices_id[0]];
+            temp[3*i+2].start_vertex = &iVertices[iFaces[i].vertices_id[2]];
             temp[3*i+2].face_of_edge = &iFaces[i];
             temp[3*i+2].prev_edge = &temp[3*i+1];
             temp[3*i+2].next_edge = &temp[3*i];
         }
         
+        //add pair to each half edge
         for(unsigned int i = 0; i < temp.size(); i++)
         {
             for(unsigned int j = i+1; j < temp.size(); j++)
             {
-                if(temp[i].end_vertex == temp[j].prev_edge->end_vertex && temp[i].prev_edge->end_vertex == temp[j].end_vertex)
+                if(temp[i].start_vertex == temp[j].next_edge->start_vertex && temp[i].next_edge->start_vertex == temp[j].start_vertex)
                 {
                     temp[i].pair_edge = &temp[j];
                     temp[j].pair_edge = &temp[i];
                 }
             }
         }
+
         return temp;
+    }
+
+    void Mesh::AddHalfEdge(std::vector<HalfEdge>& iEdges, std::vector<Vertex>& iVertices)
+    {
+        std::sort(iEdges.begin(), iEdges.end(), compare);
+
+        for (unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            for (unsigned int j = 0; j < iEdges.size(); j++)
+            {
+                if ((iEdges[j].start_vertex->vertex_id == iVertices[i].vertex_id) &&
+                    iVertices[i].halfEdge == nullptr)
+                {
+                    iVertices[i].halfEdge = &iEdges[j];
+                    continue;
+                }
+            }
+        }
     }
 
     //cell_table -> std::map<int, std::vector<unsigned int>>
@@ -598,7 +626,6 @@ namespace MSc
         
         
         // get the length of edges
-        
         std::map<unsigned int, float> temp;
         
         
@@ -676,6 +703,37 @@ namespace MSc
         return temp;
     }
 
+    std::map<unsigned int, float> Mesh::CalculateWeight(std::vector<Vertex>& iVertices, std::vector<HalfEdge>& iEdges)
+    {   
+        std::map<unsigned int, float> temp;
+
+        // compute the length of each half edge
+        for (unsigned int i = 0; i < iEdges.size(); i++)
+        {
+            iEdges[i].length = glm::distance(iEdges[i].start_vertex->position, iEdges[i].next_edge->start_vertex->position);
+        }
+
+        for (unsigned int i = 0; i < iVertices.size(); i++)
+        {
+            std::priority_queue<float> edge_length;
+
+            auto start_half = iVertices[i].halfEdge;
+            auto half = start_half;
+            do
+            {
+                edge_length.push(start_half->length);
+                half = half->prev_edge->pair_edge;
+
+            } while (start_half != half);
+
+            if (edge_length.size() != 0)
+                temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, edge_length.top()));
+            else
+                temp.insert(std::pair<unsigned int, float>(iVertices[i].vertex_id, 0.f));
+        }
+
+        return temp;
+    }
     // R table (key is the cell id, value is the vertex id)
     std::map<unsigned int, unsigned int> Mesh::CalculateRepresentativeVertices(CellSet& iGrid, std::vector<Vertex>& iVertices)
     {
