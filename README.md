@@ -1,7 +1,7 @@
 # Adaptive-Simplification-of-Massive-Meshes
 this project is based on the paper "Multi-resolution 3D approximations for rendering complex scenes"
 
-**Please use the linux branch to open the project**
+::smile::**Please use the linux branch to open the project**
 
 The way to use Premake
 
